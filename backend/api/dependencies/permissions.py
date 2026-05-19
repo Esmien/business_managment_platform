@@ -1,3 +1,5 @@
+from typing import Annotated
+
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -83,3 +85,6 @@ class PermissionChecker:
             )
 
         return user
+
+
+CurrentUserDepends = Annotated[User, Depends(get_current_user)]

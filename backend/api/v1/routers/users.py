@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status
 
+from backend.api.dependencies.permissions import CurrentUserDepends
 from backend.api.dependencies.users import (
-    CurrentUserDepends,
     UserServiceDepends,
     UserUpdateBody,
 )
