@@ -5,8 +5,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger, String, ForeignKey, Boolean
 from sqlalchemy import Enum as SQLEnum
 
+from backend.core.constants import RoleName
 from backend.core.database.engine import Base
-from backend.core.config import RoleName
 
 
 if TYPE_CHECKING:

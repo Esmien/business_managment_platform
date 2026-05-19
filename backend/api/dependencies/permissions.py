@@ -2,7 +2,8 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-from backend.core.config import settings, RoleName
+from backend.core.config import settings
+from backend.core.constants import RoleName
 from backend.core.database.models.users import User
 from backend.exceptions import UserDoesNotExistsError, UserNotActiveError
 
@@ -42,7 +43,7 @@ async def get_current_user(
 
 async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
     """Проверяет, является ли пользователь админом"""
-    if current_user.role.name.value != RoleName.ADMIN:
+    if current_user.role.name != RoleName.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Для выполнения этого действия необходимы права администратора",
