@@ -16,3 +16,7 @@ class InvalidPasswordError(Exception):
 
 class UserNotActiveError(Exception):
     pass
+
+
+class TeamDoesNotExistsError(Exception):
+    pass
