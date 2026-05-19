@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from backend.api.dependencies.permissions import PermissionChecker, CurrentUserDepends
 from backend.api.dependencies.teams import (
     TeamServiceDepends,
-    TeamCreateQuery,
+    TeamCreateBody,
     TeamJoinQuery,
 )
 from backend.core.constants import BusinessElementName, PermissionName
@@ -56,7 +56,7 @@ async def get_team(
 )
 async def create_team(
     service: TeamServiceDepends,
-    team_in: TeamCreateQuery,
+    team_in: TeamCreateBody,
 ):
     """
     Создает новую пустую команду
