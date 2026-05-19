@@ -17,3 +17,8 @@ class UserService:
             setattr(user, key, value)
 
         return await self.repo.update_user(user)
+
+    async def soft_delete_profile(self, user: User) -> bool:
+        await self.repo.soft_delete_user(user=user)
+
+        return True

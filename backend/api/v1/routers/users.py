@@ -39,3 +39,21 @@ async def update_my_info(
         user=current_user, update_data=update_data
     )
     return updated_user
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    summary="'Мягкое' удаление текущего пользователя",
+)
+async def delete_me(
+    current_user: CurrentUserDepends,
+    service: UserServiceDepends,
+):
+    """
+    'Мягкое' удаление пользователя
+    """
+
+    # Удаляем пользователя, делая его неактивным
+    await service.soft_delete_profile(user=current_user)
+    return {"message": f"Пользователь {current_user.name} удален"}
