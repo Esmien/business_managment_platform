@@ -2,9 +2,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from backend.core.constants import RoleName
 from backend.core.database.models import User, Role
 from backend.core.schemas.user import UserRegister
-from backend.core.config import RoleName
 
 
 class RegisterRepository:
