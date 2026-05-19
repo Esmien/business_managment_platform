@@ -1,12 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 
-from backend.api.dependencies.permissions import PermissionChecker
+from backend.api.dependencies.permissions import PermissionChecker, CurrentUserDepends
 from backend.api.dependencies.teams import (
     TeamServiceDepends,
     TeamCreateQuery,
     TeamJoinQuery,
 )
-from backend.api.dependencies.users import CurrentUserDepends
 from backend.core.constants import BusinessElementName, PermissionName
 from backend.core.schemas.team import TeamWithMembersRead, TeamRead
 from backend.exceptions import (
