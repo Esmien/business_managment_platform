@@ -16,6 +16,7 @@ from backend.exceptions import (
     InvalidPasswordError,
     UserDoesNotExistsError,
     UserNotActiveError,
+    UserAlreadyActiveError,
 )
 
 
@@ -87,7 +88,7 @@ async def restore_user(
     try:
         user = await service.check_users_creds(form_data.username, form_data.password)
         await service.activate_user(user=user)
-    except UserExistsError:
+    except UserAlreadyActiveError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Пользователь уже активен"
         )
