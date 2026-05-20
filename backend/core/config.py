@@ -1,45 +1,45 @@
-from pydantic import computed_field
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
-    # Security
-    SECRET_KEY: str
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+class BaseModelConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # Database (Postgres)
+
+class LoggerConfig(BaseModelConfig):
+    LOG_LEVEL: str = "DEBUG"
+    LOG_SERIALIZE: bool = False  # Если True, будет писать в JSON
+
+
+class DatabaseConfig(BaseModelConfig):
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "postgres"
-    DB_NAME: str = "business_management"
-    DB_HOST: str = "localhost"
+    DB_HOST: str = "db"
     DB_PORT: int = 5432
+    DB_NAME: str = "parser_db"
 
-    @computed_field
     @property
-    def DATABASE_URL(self) -> str:
-        """
-        Собираем строку подключения автоматически из переменных.
-        Используем asyncpg драйвер.
-        """
+    def database_url(self) -> str:
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-    # Uvicorn
-    UVI_PORT: int = 8000
-    UVI_HOST: str = "0.0.0.0"
 
-    # Loguru
-    LOG_LEVEL: str = "DEBUG"
-    LOG_FORMAT: str = "<green>{time:HH:mm}</green> | <level>{level: <8}</level> | <cyan>{message}</cyan>"
-    LOG_COLORIZE: bool = True
+class RedisConfig(BaseModelConfig):
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
 
-    # Конфигурация Pydantic
-    model_config = SettingsConfigDict(
-        env_file=".env",  # Читаем из .env
-        env_file_encoding="utf-8",
-        extra="ignore",  # Игнорируем лишние переменные в .env
-    )
+    @property
+    def redis_url(self) -> str:
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
 
 
-# Создаем единственный экземпляр настроек
+class InviteCodeConfig(BaseModelConfig):
+    CODE_LENGTH: int = 6
+
+
+class Settings(BaseModelConfig):
+    db: DatabaseConfig = DatabaseConfig()
+    redis: RedisConfig = RedisConfig()
+    inv_code: InviteCodeConfig = InviteCodeConfig()
+
+
 settings = Settings()

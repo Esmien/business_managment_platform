@@ -32,3 +32,7 @@ class TeamAlreadyExistsError(Exception):
 
 class UserAlreadyInTeamError(Exception):
     pass
+
+
+class UserAlreadyActiveError(Exception):
+    pass
