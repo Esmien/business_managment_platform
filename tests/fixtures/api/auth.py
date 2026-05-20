@@ -1,0 +1,38 @@
+import pytest
+
+
+@pytest.fixture
+def data_for_register():
+    return {
+        "email": "user@example.com",
+        "name": "Иван",
+        "surname": "Иванович",
+        "last_name": "Иванов",
+        "team_id": 0,
+        "password": "secret_password",
+        "repeat_password": "secret_password",
+    }
+
+
+@pytest.fixture
+def success_register_response():
+    return {
+        "email": "user@example.com",
+        "name": "Иван",
+        "surname": "Иванович",
+        "last_name": "Иванов",
+        "team_id": None,
+        "id": 4,
+        "is_active": True,
+        "role": {"name": "user", "id": 3},
+    }
+
+
+@pytest.fixture
+def reg_user_already_exists_response():
+    return {"detail": "Пользователь с таким email уже зарегистрирован!"}
+
+
+@pytest.fixture
+def reg_role_not_exists_response():
+    return {"detail": "Запрашиваемая роль не найдена, обратитесь в поддержку"}
