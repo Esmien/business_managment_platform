@@ -1,3 +1,5 @@
+from typing import Any
+
 import bcrypt
 from datetime import datetime, timedelta, timezone
 
@@ -18,13 +20,17 @@ async def verify_password(plain_password: str, hashed_password: str) -> bool:
         hashed_password - Хеш пароля
 
     Returns:
-        True, если пароль совпадает с хешем, иначе False
+        True если пароль верный
+
+    Raises:
+        InvalidPasswordError - если пароль неверный
     """
 
     # Превращаем пароль в набор байтов
-    password_bytes = plain_password.encode("utf-8")
+    password_bytes = plain_password.encode(encoding="utf-8")
     # Превращаем хеш пароля в набор байтов
-    hashed_password_bytes = hashed_password.encode("utf-8")
+    hashed_password_bytes = hashed_password.encode(encoding="utf-8")
+    # Сравниваем байты
     is_password_valid = await run_in_threadpool(
         bcrypt.checkpw, password_bytes, hashed_password_bytes
     )
@@ -47,7 +53,7 @@ async def get_password_hash(password: str) -> str:
     """
 
     # Превращаем пароль в набор байтов
-    password_bytes = password.encode("utf-8")
+    password_bytes = password.encode(encoding="utf-8")
 
     # Генерируем соль
     salt = bcrypt.gensalt()
@@ -57,7 +63,9 @@ async def get_password_hash(password: str) -> str:
     return hashed_password.decode("utf-8")
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    data: dict[str, Any], expires_delta: timedelta | None = None
+) -> str:
     """
     Создает JWT токен.
 
@@ -71,17 +79,20 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
     # Спасаем исходный словарь от мутаций
     curr_data = data.copy()
-    expires_time = datetime.now(timezone.utc)
+    expires_time = datetime.now(tz=timezone.utc)
 
     # Если время жизни токена не задано, берем дефолтное
     if expires_delta:
         expires_time += expires_delta
     else:
-        expires_time += timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_time += timedelta(minutes=settings.security.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     logger.debug(f"Время жизни токена: {expires_time}")
 
     # Добавляем время жизни токена в словарь
     curr_data["exp"] = expires_time
 
-    return jwt.encode(curr_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    # Собираем токен со всеми необходимыми данными
+    return jwt.encode(
+        payload=curr_data, key=settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
