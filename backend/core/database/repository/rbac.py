@@ -11,7 +11,17 @@ class RbacRepository:
     async def get_access_rule(
         self, role_id: int, element_name: str
     ) -> AccessRule | None:
-        query = (
+        """
+        Возвращает правило доступа для указанной роли на указанный ресурс.
+
+        Args:
+            role_id - ID роли
+            element_name - название ресурса
+
+        Returns:
+            AccessRule если правило найдено, иначе None
+        """
+        stmt = (
             select(AccessRule)
             .join(BusinessElement)
             .where(
@@ -20,6 +30,6 @@ class RbacRepository:
             )
         )
 
-        result = await self.session.execute(query)
+        result = await self.session.execute(statement=stmt)
 
         return result.scalar_one_or_none()

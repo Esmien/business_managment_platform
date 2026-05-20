@@ -13,6 +13,7 @@ class BusinessElement(Base):
 
 class AccessRule(Base):
     """Правила доступа: определяет, какие права есть у роли на ресурс"""
+
     __tablename__ = "access_rules"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
