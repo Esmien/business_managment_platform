@@ -1,6 +1,6 @@
 from loguru import logger
 
-from backend.core.database.repository.rbac import RbacRepository
+from backend.rbac.repository import RbacRepository
 
 
 class RbacService:

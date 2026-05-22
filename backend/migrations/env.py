@@ -1,10 +1,11 @@
 import sys
 from pathlib import Path
 
+from backend.core.database import Base
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from backend.core.config import settings
-from backend.core.database.models import Base
 
 import asyncio
 from logging.config import fileConfig
@@ -29,7 +30,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.db.database_url)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

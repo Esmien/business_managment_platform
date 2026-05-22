@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import List
 
-from backend.core.schemas.user import UserRead
+from backend.user.schemas import UserRead
 
 
 class TeamBase(BaseModel):

@@ -8,8 +8,8 @@ from backend.api.dependencies.reg_and_auth import (
     RegisterServiceDepends,
 )
 
-from backend.core.schemas.user import UserRead, Token, UserRegister, UserChangeStatus
-from backend.core.schemas.error_schemas import ErrorResponseSchema
+from backend.user.schemas import UserRead, Token, UserRegister, UserChangeStatus
+from backend.core.utils.error_schemas import ErrorResponseSchema
 from backend.exceptions import (
     UserExistsError,
     RoleDoesNotExistsError,

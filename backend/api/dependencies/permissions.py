@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from backend.core.config import settings
 from backend.core.constants import RoleName, BusinessElementName, PermissionName
-from backend.core.database.models.users import User
+from backend.user.models import User
 from backend.exceptions import UserDoesNotExistsError, UserNotActiveError
 
 from backend.api.dependencies.reg_and_auth import AuthServiceDepends
@@ -17,8 +17,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    auth_service: AuthServiceDepends = None,
+    auth_service: AuthServiceDepends,
+    token: str = Depends(oauth2_scheme)
 ) -> User:
     """
     Возвращает текущего активного пользователя по JWT токену

@@ -7,7 +7,7 @@ from backend.api.dependencies.teams import (
     TeamJoinBody,
 )
 from backend.core.constants import BusinessElementName, PermissionName
-from backend.core.schemas.team import TeamWithMembersRead, TeamRead
+from backend.team.schemas import TeamWithMembersRead, TeamRead
 from backend.exceptions import (
     TeamDoesNotExistsError,
     TeamAlreadyExistsError,

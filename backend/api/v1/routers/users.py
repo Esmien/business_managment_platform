@@ -5,7 +5,7 @@ from backend.api.dependencies.users import (
     UserServiceDepends,
     UserUpdateBody,
 )
-from backend.core.schemas.user import UserRead
+from backend.user.schemas import UserRead
 
 router = APIRouter(prefix="/users", tags=["Пользователи"])
 

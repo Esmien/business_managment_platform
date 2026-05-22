@@ -1,12 +1,9 @@
 from loguru import logger
 
 from backend.core.constants import RoleName
-from backend.core.database.models.users import User
-from backend.core.database.repository.reg_and_auth import (
-    AuthRepository,
-    RegisterRepository,
-)
-from backend.core.schemas.user import Token, UserRegister
+from backend.user.models import User
+from backend.user.repository import RegisterRepository, AuthRepository, UserRepository
+from backend.user.schemas import Token, UserRegister, UserUpdate
 from backend.exceptions import (
     UserExistsError,
     UserNotActiveError,
@@ -170,3 +167,31 @@ class AuthService:
             raise UserNotActiveError
 
         return user
+
+
+class UserService:
+    def __init__(self, repo: UserRepository):
+        self.repo = repo
+
+    async def update_profile(self, user: User, update_data: UserUpdate) -> User:
+        """
+        Обновляет данные пользователя (ФИО)
+
+        Args:
+            user - модель пользователя для обновления
+            update_data - данные, которые пользователь хочет обновить
+
+        Returns:
+            Обновленная модель пользователя (или исходная, если данных для обновления нет)
+        """
+        # Сериализуем данные для дальнейшей обработки в репозитории, исключая не заданные поля
+        update_dict = update_data.model_dump(exclude_unset=True)
+
+        if not update_dict:
+            return user
+
+        return await self.repo.update_user(user=user, update_dict=update_dict)
+
+    async def soft_delete_profile(self, user: User) -> None:
+        """Мягко удаляет пользователя (деактивирует)"""
+        await self.repo.soft_delete_user(user=user)

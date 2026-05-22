@@ -4,9 +4,9 @@ from fastapi import Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database.engine import get_session
-from backend.core.database.repository.user import UserRepository
-from backend.core.schemas.user import UserUpdate
-from backend.core.services.user_service import UserService
+from backend.user.repository import UserRepository
+from backend.user.schemas import UserUpdate
+from backend.user.service import UserService
 
 
 async def get_user_repo(
