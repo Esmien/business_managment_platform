@@ -13,7 +13,7 @@ from backend.core.database.engine import Base
 
 # Для аннотаций во избежание циклических импортов
 if TYPE_CHECKING:
-    from backend.core.database.models.users import User
+    from backend.user.models import User
 
 # Собираем статусы в строку для кастомных констрейтов на уровне БД.
 # Без них повторные миграции падают

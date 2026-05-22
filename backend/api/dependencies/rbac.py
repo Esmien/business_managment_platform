@@ -4,8 +4,8 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database.engine import get_session
-from backend.core.database.repository.rbac import RbacRepository
-from backend.core.services.rbac_service import RbacService
+from backend.rbac.repository import RbacRepository
+from backend.rbac.service import RbacService
 
 
 async def get_rbac_repo(

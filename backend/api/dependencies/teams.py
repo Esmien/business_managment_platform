@@ -4,9 +4,9 @@ from fastapi import Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database.engine import get_session
-from backend.core.database.repository.team import TeamRepository
-from backend.core.schemas.team import TeamCreate, TeamJoin
-from backend.core.services.team_service import TeamService
+from backend.team.repository import TeamRepository
+from backend.team.schemas import TeamCreate, TeamJoin
+from backend.team.service import TeamService
 
 
 async def get_team_repo(

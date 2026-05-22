@@ -2,9 +2,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from backend.core.database.models import User
-from backend.core.database.models.teams import Team
-from backend.core.schemas.team import TeamCreate
+from backend.team.models import Team
+from backend.team.schemas import TeamCreate
+from backend.user.models import User
 
 
 class TeamRepository:

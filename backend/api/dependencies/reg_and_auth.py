@@ -5,11 +5,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database.engine import get_session
-from backend.core.database.repository.reg_and_auth import (
-    RegisterRepository,
-    AuthRepository,
-)
-from backend.core.services.auth_service import AuthService, RegisterService
+from backend.user.repository import RegisterRepository, AuthRepository
+from backend.user.service import AuthService, RegisterService
 
 
 async def get_register_repo(

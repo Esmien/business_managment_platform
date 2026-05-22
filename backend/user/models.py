@@ -12,8 +12,8 @@ from backend.core.database.engine import Base
 
 # Для аннотаций во избежание циклических импортов
 if TYPE_CHECKING:
-    from backend.core.database.models.teams import Team
-    from backend.core.database.models.tasks import Task, Comment
+    from backend.team.models import Team
+    from backend.task.models import Task, Comment
 
 
 class User(Base):

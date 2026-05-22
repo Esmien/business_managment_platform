@@ -6,10 +6,11 @@ from sqlalchemy.pool import NullPool
 from backend.api.dependencies.permissions import get_current_user
 from backend.api.main import app
 from backend.core.database.engine import get_session, Base
-from backend.core.database.models import AccessRule, Role, User, BusinessElement, Team
-from backend.core.schemas.rbac import RBACPermissions
+from backend.rbac.models import AccessRule, BusinessElement
+from backend.rbac.schemas import RBACPermissions
 from backend.core.security import get_password_hash
-
+from backend.team.models import Team
+from backend.user.models import User, Role
 
 TEST_DB_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_business_db"
 

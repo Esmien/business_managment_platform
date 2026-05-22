@@ -2,14 +2,15 @@ import secrets
 import string
 
 from backend.core.config import settings
-from backend.core.database.models import User, Team
-from backend.core.database.repository.team import TeamRepository
-from backend.core.schemas.team import TeamCreate
+from backend.team.models import Team
+from backend.team.repository import TeamRepository
+from backend.team.schemas import TeamCreate
 from backend.exceptions import (
     TeamDoesNotExistsError,
     TeamAlreadyExistsError,
     UserAlreadyInTeamError,
 )
+from backend.user.models import User
 
 
 class TeamService:

@@ -10,7 +10,7 @@ from backend.core.database.engine import Base
 
 # Для аннотаций во избежание циклических импортов
 if TYPE_CHECKING:
-    from backend.core.database.models.users import User
+    from backend.user.models import User
 
 
 class Team(Base):
