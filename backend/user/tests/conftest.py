@@ -6,7 +6,7 @@ import pytest_asyncio
 
 from backend.core.security import get_password_hash
 from backend.user.models import User
-from backend.user.repository import RegisterRepository
+from backend.user.repository import RegisterRepository, AuthRepository
 from backend.user.schemas import UserRegister
 from backend.user.service import RegisterService, AuthService
 from tests.fixtures.init_db_fixtures import test_async_session_maker
@@ -35,7 +35,7 @@ def user_in():
 @pytest.fixture
 def user_out():
     return User(
-        id=4,
+        id=5,
         email="test@test.com",
         hashed_password=HASHED_PASSWORD,
         name="Test",
@@ -83,3 +83,8 @@ async def db_session():
 @pytest.fixture
 def register_repo(db_session):
     return RegisterRepository(session=db_session)
+
+
+@pytest.fixture
+def auth_repo(db_session):
+    return AuthRepository(session=db_session)
