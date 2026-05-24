@@ -2,11 +2,20 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
+import pytest_asyncio
 
 from backend.core.security import get_password_hash
 from backend.user.models import User
+from backend.user.repository import RegisterRepository
 from backend.user.schemas import UserRegister
 from backend.user.service import RegisterService, AuthService
+from tests.fixtures.init_db_fixtures import test_async_session_maker
+
+
+# pytest_plugins = [
+#     "tests.fixtures.init_db_fixtures",
+# ]
+
 
 HASHED_PASSWORD = asyncio.run(get_password_hash("test"))
 
@@ -26,7 +35,20 @@ def user_in():
 @pytest.fixture
 def user_out():
     return User(
-        id=1,
+        id=4,
+        email="test@test.com",
+        hashed_password=HASHED_PASSWORD,
+        name="Test",
+        surname="Test_1",
+        last_name="Test_2",
+        role_id=1,
+        is_active=True,
+    )
+
+
+@pytest.fixture
+def user_to_insert():
+    return User(
         email="test@test.com",
         hashed_password=HASHED_PASSWORD,
         name="Test",
@@ -50,3 +72,14 @@ def register_service(mock_repo):
 @pytest.fixture
 def auth_service(mock_repo):
     return AuthService(repo=mock_repo)
+
+
+@pytest_asyncio.fixture
+async def db_session():
+    async with test_async_session_maker() as session:
+        yield session
+
+
+@pytest.fixture
+def register_repo(db_session):
+    return RegisterRepository(session=db_session)

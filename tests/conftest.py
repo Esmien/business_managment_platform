@@ -1,8 +1,8 @@
 pytest_plugins = [
-    "tests.fixtures.api.core",
-    "tests.fixtures.api.teams",
-    "tests.fixtures.api.register",
-    "tests.fixtures.api.login",
-    "tests.fixtures.api.users",
+    "backend.api.tests.fixtures.core",
+    "backend.api.tests.fixtures.teams",
+    "backend.api.tests.fixtures.register",
+    "backend.api.tests.fixtures.login",
+    "backend.api.tests.fixtures.users",
     "tests.fixtures.init_db_fixtures",
 ]
