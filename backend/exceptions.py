@@ -1,0 +1,38 @@
+class UserExistsError(Exception):
+    pass
+
+
+class UserDoesNotExistsError(Exception):
+    pass
+
+
+class RoleDoesNotExistsError(Exception):
+    pass
+
+
+class InvalidPasswordError(Exception):
+    pass
+
+
+class UserNotActiveError(Exception):
+    pass
+
+
+class TeamDoesNotExistsError(Exception):
+    pass
+
+
+class AccessDeniedError(Exception):
+    pass
+
+
+class TeamAlreadyExistsError(Exception):
+    pass
+
+
+class UserAlreadyInTeamError(Exception):
+    pass
+
+
+class UserAlreadyActiveError(Exception):
+    pass
