@@ -38,7 +38,9 @@ async def test_create_team_duplicate_name(
 async def test_join_success(
     client, join_team_right_code_request, join_team_success_response
 ):
-    response = await client.post("/api/v1/teams/join", json=join_team_right_code_request)
+    response = await client.post(
+        "/api/v1/teams/join", json=join_team_right_code_request
+    )
 
     assert response.status_code == 200
     assert response.json() == join_team_success_response
@@ -48,7 +50,9 @@ async def test_join_already_in_team(
     client, join_team_right_code_request, join_team_already_exists_response
 ):
     await client.post("/api/v1/teams/join", json=join_team_right_code_request)
-    response = await client.post("/api/v1/teams/join", json=join_team_right_code_request)
+    response = await client.post(
+        "/api/v1/teams/join", json=join_team_right_code_request
+    )
 
     assert response.status_code == 400
     assert response.json() == join_team_already_exists_response
@@ -57,7 +61,9 @@ async def test_join_already_in_team(
 async def test_join_wrong_code(
     client, join_team_wrong_code_request, join_team_wrong_code_response
 ):
-    response = await client.post("/api/v1/teams/join", json=join_team_wrong_code_request)
+    response = await client.post(
+        "/api/v1/teams/join", json=join_team_wrong_code_request
+    )
 
     assert response.status_code == 404
     assert response.json() == join_team_wrong_code_response
