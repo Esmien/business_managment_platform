@@ -21,13 +21,20 @@ class RegisterRepository:
             user_to_register - DTO-модель пользователя для регистрации со всеми нужными полями
 
         Returns:
-            Модель зарегистрированного пользователя
+            Модель зарегистрированного пользователя с подгруженной ролью
         """
         new_user = User(**user_to_register.model_dump(exclude_none=True))
         self.session.add(instance=new_user)
         await self.session.flush()
 
-        return UserDTO.model_validate(new_user)
+        # Подгружаем роль пользователя
+        stmt = (
+            select(User).where(User.id == new_user.id).options(selectinload(User.role))
+        )
+        result = await self.session.execute(statement=stmt)
+        user_with_role = result.scalar_one()
+
+        return UserDTO.model_validate(user_with_role)
 
     async def check_user_exists(self, user_in: UserRegister) -> bool:
         """
