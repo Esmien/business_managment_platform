@@ -1,4 +1,6 @@
 import asyncio
+from typing import Callable
+
 from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +46,9 @@ async def _create_access_rule_if_not_exists(
         session.add(rule)
 
 
-async def init_basic_data(session: AsyncSession):
+async def init_basic_data(
+    session: AsyncSession, password_hasher: Callable = get_password_hash
+):
     logger.info("Начинаем инициализацию базовых данных...")
     admin_role = await get_or_create(session, Role, name=RoleName.ADMIN)
     manager_role = await get_or_create(session, Role, name=RoleName.MANAGER)
@@ -61,13 +65,24 @@ async def init_basic_data(session: AsyncSession):
         if not existing_user:
             new_user = User(
                 email=email,
-                hashed_password=await get_password_hash(role),
+                hashed_password=await password_hasher(role),
                 role_id=roles_map[role].id,
                 name=role.title(),
             )
             session.add(new_user)
             await session.flush()
             await session.refresh(new_user)
+
+    inactive_user = User(
+        email="inactive_user@user.com",
+        hashed_password=await password_hasher("user"),
+        role_id=roles_map["user"].id,
+        name="Inactive user",
+        is_active=False,
+    )
+    session.add(inactive_user)
+    await session.flush()
+    await session.refresh(inactive_user)
 
     permissions_map = {
         "admin": RBACPermissions(
