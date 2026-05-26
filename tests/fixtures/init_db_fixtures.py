@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.pool import NullPool
 
 from backend.api.dependencies.uow import get_uow
+from backend.core.constants import BusinessElementName, RoleName
 from backend.core.database import load_all_models
 
 from backend.api.dependencies.permissions import get_current_user
@@ -56,126 +57,116 @@ TEAM_NAME = "Dummy name"
 TEAM_CODE = "111111"
 
 
-async def _get_or_create(session: AsyncSession, model, **kwargs):
-    query = select(model).filter_by(**kwargs)
-    result = await session.execute(query)
-    instance = result.scalar_one_or_none()
+class InitDatabase:
+    PASSWORDS_CACHE = {}
 
-    if instance is None:
-        instance = model(**kwargs)
-        session.add(instance)
-        await session.flush()
-        await session.refresh(instance)
-    return instance
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
+    async def get_or_create(self, model, **kwargs):
+        """Удобный хелпер: ищет запись, если нет - создает"""
+        stmt = select(model).filter_by(**kwargs)
+        result = await self.session.execute(stmt)
+        instance = result.scalar_one_or_none()
 
-async def _create_access_rule_if_not_exists(
-    session: AsyncSession, role_id: int, element_id: int, permissions: RBACPermissions
-):
-    query = select(AccessRule).where(
-        AccessRule.role_id == role_id,
-        AccessRule.business_element_id == element_id,
-    )
-    result = await session.execute(query)
-    rule = result.scalar_one_or_none()
+        if not instance:
+            instance = model(**kwargs)
+            self.session.add(instance)
+            await self.session.flush()
+            await self.session.refresh(instance)
+        return instance
 
-    if rule is None:
-        rule = AccessRule(
-            role_id=role_id,
-            business_element_id=element_id,
-            **permissions.model_dump(exclude_none=True),
+    async def _create_access_rule_if_not_exists(
+        self, role_id: int, element_id: int, permissions: RBACPermissions
+    ):
+        query = select(AccessRule).where(
+            AccessRule.role_id == role_id,
+            AccessRule.business_element_id == element_id,
         )
-        session.add(rule)
+        result = await self.session.execute(query)
+        rule = result.scalar_one_or_none()
 
-
-PASSWORDS_CACHE = {}
-
-
-async def get_cached_password_hash(password: str) -> str:
-    """Возвращает закешированный хеш или генерирует новый, если его еще нет"""
-    if password not in PASSWORDS_CACHE:
-        PASSWORDS_CACHE[password] = await get_password_hash(password)
-    return PASSWORDS_CACHE[password]
-
-
-async def init_db(session: AsyncSession):
-    admin_role = await _get_or_create(session, Role, name="admin")
-    manager_role = await _get_or_create(session, Role, name="manager")
-    user_role = await _get_or_create(session, Role, name="user")
-
-    roles_map = {"admin": admin_role, "manager": manager_role, "user": user_role}
-
-    for role_name in ["admin", "manager", "user"]:
-        email = f"{role_name}@{role_name}.com"
-        query = select(User).filter_by(email=email)
-        result = await session.execute(query)
-        existing_user = result.scalar_one_or_none()
-
-        if not existing_user:
-            new_user = User(
-                email=email,
-                hashed_password=await get_cached_password_hash(role_name),
-                role_id=roles_map[role_name].id,
-                name=role_name.title(),
+        if rule is None:
+            rule = AccessRule(
+                role_id=role_id,
+                business_element_id=element_id,
+                **permissions.model_dump(exclude_none=True),
             )
-            session.add(new_user)
-            await session.flush()
-            await session.refresh(new_user)
+            self.session.add(rule)
 
-    inactive_user = User(
-        email="inactive_user@user.com",
-        hashed_password=await get_cached_password_hash("user"),
-        role_id=roles_map["user"].id,
-        name="Inactive user",
-        is_active=False,
-    )
-    session.add(inactive_user)
-    await session.flush()
-    await session.refresh(inactive_user)
+    async def get_cached_password_hash(self, password: str) -> str:
+        """Возвращает закешированный хеш или генерирует новый, если его еще нет"""
+        if password not in self.PASSWORDS_CACHE:
+            self.PASSWORDS_CACHE[password] = await get_password_hash(password)
+        return self.PASSWORDS_CACHE[password]
 
-    permissions_map = {
-        "admin": RBACPermissions(
-            read_all_permission=True,
-            update_all_permission=True,
-            delete_all_permission=True,
-            create_permission=True,
-            read_permission=True,
-            update_permission=True,
-            delete_permission=True,
-        ),
-        "manager": RBACPermissions(
-            read_all_permission=True,
-            create_permission=True,
-            read_permission=True,
-            update_permission=True,
-        ),
-        "user": RBACPermissions(read_permission=True),
-    }
+    async def run(self):
+        admin_role = await self.get_or_create(Role, name=RoleName.ADMIN)
+        manager_role = await self.get_or_create(Role, name=RoleName.MANAGER)
+        user_role = await self.get_or_create(Role, name=RoleName.USER)
 
-    users_element = await _get_or_create(session, BusinessElement, name="users")
-    business_element = await _get_or_create(session, BusinessElement, name="teams")
+        roles_map = {"admin": admin_role, "manager": manager_role, "user": user_role}
 
-    for element in [users_element, business_element]:
-        await _create_access_rule_if_not_exists(
-            session,
-            role_id=admin_role.id,
-            element_id=element.id,
-            permissions=permissions_map["admin"],
+        for role in roles_map:
+            email = f"{role}@{role}.com"
+            query = select(User).filter_by(email=email)
+            result = await self.session.execute(query)
+            existing_user = result.scalar_one_or_none()
+
+            if not existing_user:
+                new_user = User(
+                    email=email,
+                    hashed_password=await self.get_cached_password_hash(role),
+                    role_id=roles_map[role].id,
+                    name=role.title(),
+                )
+                self.session.add(new_user)
+                await self.session.flush()
+                await self.session.refresh(new_user)
+
+        inactive_user = User(
+            email="inactive_user@user.com",
+            hashed_password=await self.get_cached_password_hash("user"),
+            role_id=roles_map["user"].id,
+            name="Inactive user",
+            is_active=False,
         )
-        await _create_access_rule_if_not_exists(
-            session,
-            role_id=manager_role.id,
-            element_id=element.id,
-            permissions=permissions_map["manager"],
-        )
-        await _create_access_rule_if_not_exists(
-            session,
-            role_id=user_role.id,
-            element_id=element.id,
-            permissions=permissions_map["user"],
+        self.session.add(inactive_user)
+        await self.session.flush()
+        await self.session.refresh(inactive_user)
+
+        permissions_map = {
+            "admin": RBACPermissions(
+                read_all_permission=True,
+                update_all_permission=True,
+                delete_all_permission=True,
+                create_permission=True,
+                read_permission=True,
+                update_permission=True,
+                delete_permission=True,
+            ),
+            "manager": RBACPermissions(
+                read_all_permission=True,
+                create_permission=True,
+                read_permission=True,
+                update_permission=True,
+            ),
+            "user": RBACPermissions(read_permission=True),
+        }
+
+        # Создаем бизнес-элементы для проверки RBAC
+        teams_element = await self.get_or_create(
+            BusinessElement, name=BusinessElementName.TEAMS
         )
 
-    await session.commit()
+        for key, value in roles_map.items():
+            await self._create_access_rule_if_not_exists(
+                role_id=value.id,
+                element_id=teams_element.id,
+                permissions=permissions_map[key],
+            )
+
+        await self.session.commit()
 
 
 # 1. Фикстура для структуры БД (выполняется 1 раз за сессию)
@@ -211,7 +202,8 @@ async def prepare_data():
 
     # 2.2 Заливаем "чистые" дефолтные данные
     async with test_async_session_maker() as session:
-        await init_db(session)
+        init_db = InitDatabase(session=session)
+        await init_db.run()
         team = Team(name=TEAM_NAME, invite_code=TEAM_CODE)
         session.add(team)
         await session.commit()
