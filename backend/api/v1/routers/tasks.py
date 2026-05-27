@@ -169,35 +169,7 @@ async def delete_task(
     status_code=status.HTTP_200_OK,
     summary="Получить список задач по фильтрам",
 )
-async def get_tasks(
-    service: TaskServiceDepends,
-    user: CurrentUserDepends,
-    task_status: TaskStatusFilterQuery | None = None,
-    scope: TaskScopeFilterQuery = "my",
-):
-    """
-    Возвращает список задач с учетом фильтров.
-
-    Если нет доступа - 403 Forbidden
-    """
-    try:
-        return await service.get_filtered_tasks(
-            user=user, scope=scope, task_status=task_status
-        )
-    except AccessDeniedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        )
-
-
-@router.get(
-    path="/",
-    response_model=list[TaskRead],
-    status_code=status.HTTP_200_OK,
-    summary="Получить список задач по фильтрам",
-)
-async def get_tasks(
+async def get_tasks_by_filter(
     service: TaskServiceDepends,
     user: CurrentUserDepends,
     task_status: TaskStatusFilterQuery | None = None,
