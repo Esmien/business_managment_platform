@@ -44,14 +44,16 @@ class RegisterService:
             is_user_exists = await self.uow.register.check_user_exists(user_in=user_in)
             if is_user_exists:
                 logger.info(f"Пользователь {user_in.email} уже зарегистрирован.")
-                raise UserExistsError
+                raise UserExistsError("Пользователь с таким email уже зарегистрирован!")
 
             # Защита от присвоения несуществующей роли
             role_id = await self.uow.register.get_role_id(role_name=role_name)
             # Проблема на стороне сервера, роль не найдена
             if not role_id:
                 logger.error(f"Ошибка! Роль {role_name} не найдена.")
-                raise RoleDoesNotExistsError
+                raise RoleDoesNotExistsError(
+                    "Запрашиваемая роль не найдена, обратитесь в поддержку"
+                )
 
             # Собираем модель пользователя со всеми полями
             new_user_dto = UserCreateDTO(
@@ -132,7 +134,7 @@ class AuthService:
         # Проверяем флаг активности пользователя
         if self._check_user_active(user=user):
             logger.info(f"Пользователь {user.name} уже активен.")
-            raise UserAlreadyActiveError
+            raise UserAlreadyActiveError("Пользователь уже активен")
 
         async with self.uow:
             activated_user = await self.uow.auth.activate_user(user_email=user.email)
@@ -146,7 +148,7 @@ class AuthService:
 
         return activated_user
 
-    async def get_auth_token(self, user: UserDTO) -> Token:
+    def get_auth_token(self, user: UserDTO) -> Token:
         """
         Получает JWT-токен для пользователя
 

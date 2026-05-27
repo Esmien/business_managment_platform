@@ -40,10 +40,10 @@ async def get_team(
     try:
         team = await service.get_team(team_id=team_id)
         return team  # pragma: no cover
-    except TeamDoesNotExistsError:  # pragma: no cover
+    except TeamDoesNotExistsError as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Команда не найдена",
+            detail=str(e),
         )
 
 
@@ -73,10 +73,10 @@ async def create_team(
     try:
         team = await service.create_team(team_in)
         return team  # pragma: no cover
-    except TeamAlreadyExistsError:  # pragma: no cover
+    except TeamAlreadyExistsError as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Команда с таким названием уже существует",
+            detail=str(e),
         )
 
 
@@ -101,13 +101,13 @@ async def join_team(
             user=current_user, invite_code=join_data.invite_code
         )
         return team  # pragma: no cover
-    except TeamDoesNotExistsError:
+    except TeamDoesNotExistsError as e:
         raise HTTPException(  # pragma: no cover
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Команда с таким кодом не найдена",
+            detail=str(e),
         )
-    except UserAlreadyInTeamError:
+    except UserAlreadyInTeamError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Вы уже состоите в команде",
+            detail=str(e),
         )

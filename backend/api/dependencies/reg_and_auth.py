@@ -7,12 +7,12 @@ from backend.api.dependencies.uow import UowDepends
 from backend.user.service import AuthService, RegisterService
 
 
-async def get_auth_service(uow: UowDepends) -> AuthService:
+def get_auth_service(uow: UowDepends) -> AuthService:
     """Провайдер сервиса аутентификации для инъекции в Annotated"""
     return AuthService(uow=uow)
 
 
-async def get_register_service(uow: UowDepends) -> RegisterService:
+def get_register_service(uow: UowDepends) -> RegisterService:
     """Провайдер сервиса регистрации для инъекции в Annotated"""
     return RegisterService(uow=uow)
 

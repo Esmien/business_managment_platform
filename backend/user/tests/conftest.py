@@ -11,11 +11,6 @@ from backend.user.service import RegisterService, AuthService, UserService
 from tests.fixtures.init_db_fixtures import test_async_session_maker
 
 
-# pytest_plugins = [
-#     "tests.fixtures.init_db_fixtures",
-# ]
-
-
 HASHED_PASSWORD = asyncio.run(get_password_hash("test"))
 
 

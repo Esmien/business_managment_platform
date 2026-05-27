@@ -6,7 +6,7 @@ from backend.api.dependencies.uow import UowDepends
 from backend.rbac.service import RbacService
 
 
-async def get_rbac_service(uow: UowDepends) -> RbacService:
+def get_rbac_service(uow: UowDepends) -> RbacService:
     """Провайдер сервиса RBAC для инъекции в Annotated"""
     return RbacService(uow=uow)
 

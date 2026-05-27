@@ -23,11 +23,13 @@ async def test_register_already_exists(
 
 
 class FakeRegisterService:
-    async def register_user(self, user_in):
-        raise RoleDoesNotExistsError
+    def register_user(self, user_in):
+        raise RoleDoesNotExistsError(
+            "Запрашиваемая роль не найдена, обратитесь в поддержку"
+        )
 
 
-async def override_register_service():
+def override_register_service():
     return FakeRegisterService()  # noqa: F821
 
 
