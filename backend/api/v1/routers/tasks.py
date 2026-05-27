@@ -36,10 +36,10 @@ async def get_task(task_id: int, service: TaskServiceDepends):
     try:
         task = await service.get_task(task_id=task_id)
         return task  # pragma: no cover
-    except TaskDoesNotExistsError:  # pragma: no cover
+    except TaskDoesNotExistsError as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Задача не найдена",
+            detail=str(e),
         )
 
 
@@ -83,20 +83,20 @@ async def update_task(
             task_id=task_id, update_data=update_data, user=user
         )
         return updated_task
-    except TaskDoesNotExistsError:  # pragma: no cover
+    except TaskDoesNotExistsError as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Задача не найдена",
+            detail=str(e),
         )
     except AccessDeniedError as e:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e),
         )
-    except UserDoesNotExistsError:
+    except UserDoesNotExistsError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Попытка назначить несуществующего исполнителя",
+            detail=str(e),
         )
 
 
@@ -123,10 +123,10 @@ async def change_status(
             task_id=task_id, new_status=new_status, user=user
         )
         return updated_task
-    except TaskDoesNotExistsError:  # pragma: no cover
+    except TaskDoesNotExistsError as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Задача не найдена",
+            detail=str(e),
         )
     except AccessDeniedError as e:
         raise HTTPException(
@@ -151,10 +151,38 @@ async def delete_task(
     """
     try:
         await service.delete_task(task_id=task_id, user=user)
-    except TaskDoesNotExistsError:  # pragma: no cover
+    except TaskDoesNotExistsError as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Задача не найдена",
+            detail=str(e),
+        )
+    except AccessDeniedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        )
+
+
+@router.get(
+    path="/",
+    response_model=list[TaskRead],
+    status_code=status.HTTP_200_OK,
+    summary="Получить список задач по фильтрам",
+)
+async def get_tasks(
+    service: TaskServiceDepends,
+    user: CurrentUserDepends,
+    task_status: TaskStatusFilterQuery | None = None,
+    scope: TaskScopeFilterQuery = "my",
+):
+    """
+    Возвращает список задач с учетом фильтров.
+
+    Если нет доступа - 403 Forbidden
+    """
+    try:
+        return await service.get_filtered_tasks(
+            user=user, scope=scope, task_status=task_status
         )
     except AccessDeniedError as e:
         raise HTTPException(

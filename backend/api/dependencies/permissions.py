@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from backend.core.config import settings
-from backend.core.constants import RoleName, BusinessElementName, PermissionName
+from backend.core.constants import BusinessElementName, PermissionName
 from backend.exceptions import UserDoesNotExistsError, UserNotActiveError
 
 from backend.api.dependencies.reg_and_auth import AuthServiceDepends
@@ -59,28 +59,6 @@ async def get_current_user(
         return user
     except (UserDoesNotExistsError, UserNotActiveError):
         raise credentials_exception
-
-
-async def get_admin_user(current_user: "CurrentUserDepends") -> UserDTO:
-    """
-    Проверяет, является ли пользователь админом
-
-    Args:
-        current_user - текущий пользователь
-
-    Returns:
-        Модель пользователя, если он админ
-
-    Raises:
-        HTTPException(403) - если пользователь не является админом
-    """
-    # Проверяем, админ ли и выбрасываем исключение, если нет
-    if current_user.role.name != RoleName.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Для выполнения этого действия необходимы права администратора",
-        )
-    return current_user
 
 
 class PermissionChecker:

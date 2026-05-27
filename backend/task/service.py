@@ -13,6 +13,8 @@ from backend.exceptions import (
 
 
 class TaskService:
+    TASK_NOT_FOUND = "Задача не найдена."
+
     def __init__(self, uow: IUnitOfWork):
         self.uow = uow
 
@@ -53,7 +55,7 @@ class TaskService:
 
         if not task:
             logger.info(f"Задача с ID: {task_id} не найдена.")
-            raise TaskDoesNotExistsError
+            raise TaskDoesNotExistsError(self.TASK_NOT_FOUND)
 
         return task
 
@@ -144,7 +146,9 @@ class TaskService:
             if executor_id is not None:
                 executor = await self.uow.auth.get_user_and_role_by_user_id(executor_id)
                 if not executor:
-                    raise UserDoesNotExistsError("Указанный исполнитель не найден")
+                    raise UserDoesNotExistsError(
+                        "Попытка назначить несуществующего исполнителя"
+                    )
 
             updated_task = await self.uow.tasks.update_task(
                 task_id=task_id, update_data=update_dict
@@ -164,7 +168,7 @@ class TaskService:
         async with self.uow:
             task = await self.uow.tasks.get_task_by_id(task_id)
             if not task:
-                raise TaskDoesNotExistsError
+                raise TaskDoesNotExistsError(self.TASK_NOT_FOUND)
 
             is_manager_or_admin = user.role.name in (RoleName.ADMIN, RoleName.MANAGER)
             is_allowed = (
@@ -185,7 +189,7 @@ class TaskService:
 
             # Если что-то пошло не так на стороне репозитория
             if not updated_task:
-                raise TaskDoesNotExistsError
+                raise TaskDoesNotExistsError(self.TASK_NOT_FOUND)
 
             await self.uow.commit()
 
@@ -206,7 +210,7 @@ class TaskService:
         async with self.uow:
             task = await self.uow.tasks.get_task_by_id(task_id)
             if not task:
-                raise TaskDoesNotExistsError
+                raise TaskDoesNotExistsError(self.TASK_NOT_FOUND)
 
             # Проверка прав: руководитель или автор
             self._check_user_is_manager_or_author(task=task, user=user)

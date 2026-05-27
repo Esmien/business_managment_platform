@@ -8,7 +8,7 @@ from backend.task.schemas import TaskCreate, TaskUpdate, TaskChangeStatus
 from backend.task.service import TaskService
 
 
-async def get_task_service(uow: UowDepends) -> TaskService:
+def get_task_service(uow: UowDepends) -> TaskService:
     """
     Провайдер сервиса задач для инъекции в Annotated.
     """
