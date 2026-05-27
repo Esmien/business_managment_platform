@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException, status, Depends
 
 from backend.api.dependencies.permissions import CurrentUserDepends, get_current_user
