@@ -43,7 +43,8 @@ services:
       - db
     # Используем твой entrypoint, чтобы дождаться доступности БД
     entrypoint: [ "/bin/bash", "/app/entrypoint.sh" ]
-    command: alembic upgrade head
+    command: sh -c "alembic upgrade head &&
+      python -m backend.core.database.init_db"
     volumes:
       - .:/app
 

@@ -6,6 +6,8 @@ from backend.api.dependencies.tasks import (
     TaskCreateBody,
     TaskUpdateBody,
     TaskChangeStatusBody,
+    TaskStatusFilterQuery,
+    TaskScopeFilterQuery,
 )
 from backend.exceptions import (
     TaskDoesNotExistsError,
@@ -18,16 +20,6 @@ from backend.task.schemas import TaskRead
 router = APIRouter(
     prefix="/tasks", tags=["Задачи"], dependencies=[Depends(get_current_user)]
 )
-
-
-@router.get(
-    path="/",
-    response_model=list[TaskRead],
-    status_code=status.HTTP_200_OK,
-    summary="Получить все задачи",
-)
-async def get_all_tasks(service: TaskServiceDepends):
-    return await service.get_all_tasks()
 
 
 @router.get(
@@ -163,6 +155,34 @@ async def delete_task(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Задача не найдена",
+        )
+    except AccessDeniedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        )
+
+
+@router.get(
+    path="/",
+    response_model=list[TaskRead],
+    status_code=status.HTTP_200_OK,
+    summary="Получить список задач по фильтрам",
+)
+async def get_tasks(
+    service: TaskServiceDepends,
+    user: CurrentUserDepends,
+    task_status: TaskStatusFilterQuery | None = None,
+    scope: TaskScopeFilterQuery = "my",
+):
+    """
+    Возвращает список задач с учетом фильтров.
+
+    Если нет доступа - 403 Forbidden
+    """
+    try:
+        return await service.get_filtered_tasks(
+            user=user, scope=scope, task_status=task_status
         )
     except AccessDeniedError as e:
         raise HTTPException(
