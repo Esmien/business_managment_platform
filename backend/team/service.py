@@ -50,7 +50,7 @@ class TeamService:
 
         if team is None:
             logger.info(f"Команда ID {team_id} не найдена.")
-            raise TeamDoesNotExistsError
+            raise TeamDoesNotExistsError("Команда не найдена")
 
         logger.success(
             f"Успешно получены данные команды ID: {team.id}, Название: {team.name}."
@@ -78,7 +78,7 @@ class TeamService:
 
             if is_exists:
                 logger.info(f"Команда с названием {team_in.name} уже существует.")
-                raise TeamAlreadyExistsError
+                raise TeamAlreadyExistsError("Команда с таким названием уже существует")
 
             # Запускаем генерацию инвайт-кода в цикле, чтобы он был уникальным.
             # Если совпадений в Бд не найдено, то цикл завершается
@@ -122,14 +122,14 @@ class TeamService:
             logger.info(
                 f"Пользователь ID: {user.id}, Email: {user.email} уже состоит в команде ID: {user.team_id}."
             )
-            raise UserAlreadyInTeamError
+            raise UserAlreadyInTeamError("Вы уже состоите в команде")
 
         async with self.uow:
             team = await self.uow.teams.get_team_by_invite_code(code=invite_code)
 
             if not team:
                 logger.info(f"Инвайт код {invite_code} не найден.")
-                raise TeamDoesNotExistsError
+                raise TeamDoesNotExistsError("Команда с таким кодом не найдена")
 
             await self.uow.teams.add_user_to_team(user_id=user.id, team_id=team.id)
             await self.uow.commit()

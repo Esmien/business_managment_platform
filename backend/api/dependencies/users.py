@@ -7,7 +7,7 @@ from backend.user.schemas import UserUpdate
 from backend.user.service import UserService
 
 
-async def get_user_service(uow: UowDepends) -> UserService:
+def get_user_service(uow: UowDepends) -> UserService:
     """Провайдер сервиса пользователей для инъекции в Annotated"""
     return UserService(uow=uow)
 

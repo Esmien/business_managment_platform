@@ -41,7 +41,7 @@ class TestUnitOfWork(UnitOfWork):
         self.session_factory = test_async_session_maker
 
 
-async def override_get_uow():
+def override_get_uow():
     return TestUnitOfWork()
 
 

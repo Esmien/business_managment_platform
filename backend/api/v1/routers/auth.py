@@ -53,15 +53,15 @@ async def register_user(
     # проверка на существование->проверка наличия роли user в БД->присвоение роли и регистрация
     try:
         new_user = await service.register_user(user_in=user_in)
-    except UserExistsError:
+    except UserExistsError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пользователь с таким email уже зарегистрирован!",
+            detail=str(e),
         )
-    except RoleDoesNotExistsError:
+    except RoleDoesNotExistsError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Запрашиваемая роль не найдена, обратитесь в поддержку",
+            detail=str(e),
         )
 
     return new_user
@@ -88,10 +88,8 @@ async def restore_user(
     try:
         user = await service.check_users_creds(form_data.username, form_data.password)
         await service.activate_user(user=user)
-    except UserAlreadyActiveError:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Пользователь уже активен"
-        )
+    except UserAlreadyActiveError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except (UserDoesNotExistsError, InvalidPasswordError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль"
@@ -99,7 +97,8 @@ async def restore_user(
 
     logger.info(f"Пользователь {user.name} восстановлен")
     return UserChangeStatus(
-        message=f"Пользователь {user.name} успешно восстановлен", user=user
+        message=f"Пользователь {user.name} успешно восстановлен",
+        user=UserRead.model_validate(user),
     )
 
 
@@ -121,7 +120,7 @@ async def login(
     # Проверяем креды, получаем JWT-токен
     try:
         user = await service.check_users_creds(form_data.username, form_data.password)
-        token = await service.get_auth_token(user=user)
+        token = service.get_auth_token(user=user)
     # Если что-то не в порядке - сообщаем в респонсе
     except (UserDoesNotExistsError, InvalidPasswordError):
         raise HTTPException(

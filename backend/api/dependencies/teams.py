@@ -7,7 +7,7 @@ from backend.team.schemas import TeamCreate, TeamJoin
 from backend.team.service import TeamService
 
 
-async def get_team_service(uow: UowDepends) -> TeamService:
+def get_team_service(uow: UowDepends) -> TeamService:
     """Провайдер сервиса для работы с командами для инъекции в Annotated"""
     return TeamService(uow=uow)
 
