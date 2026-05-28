@@ -40,3 +40,7 @@ class UserAlreadyActiveError(Exception):
 
 class TaskDoesNotExistsError(Exception):
     pass
+
+
+class BadCredentialsError(Exception):
+    pass

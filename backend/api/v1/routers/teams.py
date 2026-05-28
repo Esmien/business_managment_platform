@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, status, Depends
 
 from backend.api.dependencies.permissions import (
     PermissionChecker,
@@ -12,11 +12,6 @@ from backend.api.dependencies.teams import (
 )
 from backend.core.constants import BusinessElementName, PermissionName
 from backend.team.schemas import TeamWithMembersRead, TeamRead
-from backend.exceptions import (
-    TeamDoesNotExistsError,
-    TeamAlreadyExistsError,
-    UserAlreadyInTeamError,
-)
 
 router = APIRouter(
     prefix="/teams", tags=["Команды"], dependencies=[Depends(get_current_user)]
@@ -37,14 +32,8 @@ async def get_team(
     Возвращает данные команды и список её участников.
     Если команда не существует - 404 Not Found
     """
-    try:
-        team = await service.get_team(team_id=team_id)
-        return team  # pragma: no cover
-    except TeamDoesNotExistsError as e:  # pragma: no cover
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        )
+    team = await service.get_team(team_id=team_id)
+    return team
 
 
 @router.post(
@@ -70,14 +59,8 @@ async def create_team(
     Создает новую пустую команду.
     Если такая уже есть - 400 Bad Request
     """
-    try:
-        team = await service.create_team(team_in)
-        return team  # pragma: no cover
-    except TeamAlreadyExistsError as e:  # pragma: no cover
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+    team = await service.create_team(team_in)
+    return team
 
 
 @router.post(
@@ -96,18 +79,5 @@ async def join_team(
     Код неправильный - 404 Not Found
     Попытка вступить повторно в свою текущую команду - 400 Bad Request
     """
-    try:
-        team = await service.join_team(
-            user=current_user, invite_code=join_data.invite_code
-        )
-        return team  # pragma: no cover
-    except TeamDoesNotExistsError as e:
-        raise HTTPException(  # pragma: no cover
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        )
-    except UserAlreadyInTeamError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+    team = await service.join_team(user=current_user, invite_code=join_data.invite_code)
+    return team
