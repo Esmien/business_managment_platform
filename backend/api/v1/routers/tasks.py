@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, status, Depends
 
 from backend.api.dependencies.permissions import CurrentUserDepends, get_current_user
 from backend.api.dependencies.tasks import (
@@ -9,12 +9,6 @@ from backend.api.dependencies.tasks import (
     TaskStatusFilterQuery,
     TaskScopeFilterQuery,
     CommentCreateBody,
-)
-from backend.exceptions import (
-    TaskDoesNotExistsError,
-    AccessDeniedError,
-    UserDoesNotExistsError,
-    TeamDoesNotExistsError,
 )
 from backend.task.schemas import TaskRead, CommentRead
 
@@ -34,14 +28,8 @@ async def get_task(task_id: int, service: TaskServiceDepends):
     Возвращает данные задачи.
     Если задача не существует - 404 Not Found
     """
-    try:
-        task = await service.get_task(task_id=task_id)
-        return task  # pragma: no cover
-    except TaskDoesNotExistsError as e:  # pragma: no cover
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        )
+    task = await service.get_task(task_id=task_id)
+    return task
 
 
 @router.post(
@@ -79,26 +67,10 @@ async def update_task(
     Если нет доступа (не руководитель или автор) - 403 Forbidden
     Попытка назначить исполнителем несуществующего пользователя - 400 Bad Request
     """
-    try:
-        updated_task = await service.update_task(
-            task_id=task_id, update_data=update_data, user=user
-        )
-        return updated_task
-    except TaskDoesNotExistsError as e:  # pragma: no cover
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        )
-    except AccessDeniedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        )
-    except UserDoesNotExistsError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+    updated_task = await service.update_task(
+        task_id=task_id, update_data=update_data, user=user
+    )
+    return updated_task
 
 
 @router.patch(
@@ -119,21 +91,10 @@ async def change_status(
     Если задача не найдена - 404 Not Found
     Если нет прав (необходимо быть руководителем или автором/исполнителем) - 403 Forbidden
     """
-    try:
-        updated_task = await service.change_status(
-            task_id=task_id, new_status=new_status, user=user
-        )
-        return updated_task
-    except TaskDoesNotExistsError as e:  # pragma: no cover
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        )
-    except AccessDeniedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        )
+    updated_task = await service.change_status(
+        task_id=task_id, new_status=new_status, user=user
+    )
+    return updated_task
 
 
 @router.delete(
@@ -150,18 +111,7 @@ async def delete_task(
     Если задача не существует - 404 Not Found
     Если нет доступа (не руководитель или автор) - 403 Forbidden
     """
-    try:
-        await service.delete_task(task_id=task_id, user=user)
-    except TaskDoesNotExistsError as e:  # pragma: no cover
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        )
-    except AccessDeniedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        )
+    await service.delete_task(task_id=task_id, user=user)
 
 
 @router.get(
@@ -181,20 +131,9 @@ async def get_tasks_by_filter(
 
     Если нет доступа - 403 Forbidden
     """
-    try:
-        return await service.get_filtered_tasks(
-            user=user, scope=scope, task_status=task_status
-        )
-    except AccessDeniedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        )
-    except TeamDoesNotExistsError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+    return await service.get_filtered_tasks(
+        user=user, scope=scope, task_status=task_status
+    )
 
 
 @router.post(
@@ -215,18 +154,7 @@ async def add_comment(
     Если задача не найдена - 404 Not Found
     Если нет прав (не автор, не исполнитель и не руководитель) - 403 Forbidden
     """
-    try:
-        new_comment = await service.add_comment(
-            task_id=task_id, user=user, comment_in=comment_in
-        )
-        return new_comment
-    except TaskDoesNotExistsError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        )
-    except AccessDeniedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        )
+    new_comment = await service.add_comment(
+        task_id=task_id, user=user, comment_in=comment_in
+    )
+    return new_comment

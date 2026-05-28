@@ -7,6 +7,7 @@ from backend.exceptions import (
     UserDoesNotExistsError,
     UserNotActiveError,
     UserAlreadyActiveError,
+    BadCredentialsError,
 )
 from backend.user.models import User
 from backend.user.schemas import UserDTO, Token
@@ -18,9 +19,9 @@ from backend.user.schemas import UserDTO, Token
         # Успешный кейс: юзер есть, пароль подходит, ошибки нет
         ("admin@admin.com", "valid_password", None),
         # Провал: юзер есть, но пароль не тот
-        ("admin@admin.com", "invalid_password", InvalidPasswordError),
+        ("admin@admin.com", "invalid_password", BadCredentialsError),
         # Провал: юзера вообще нет в базе
-        ("invalid_username@user.com", "any_password", UserDoesNotExistsError),
+        ("invalid_username@user.com", "any_password", BadCredentialsError),
     ],
 )
 @patch("backend.user.service.verify_password")
@@ -29,13 +30,13 @@ async def test_auth_check_creds(
 ):
     testing_user = None
 
-    if exc == UserDoesNotExistsError:
+    if exc == BadCredentialsError:
         mock_uow.auth.get_user.return_value = None
     else:
         testing_user = User(email=email, hashed_password="fake_hash")
         mock_uow.auth.get_user.return_value = testing_user
 
-    if exc == InvalidPasswordError:
+    if exc == BadCredentialsError:
         mock_verify_password.side_effect = InvalidPasswordError()
     else:
         # Очищаем side_effect на случай, если pytest переиспользует мок между итерациями

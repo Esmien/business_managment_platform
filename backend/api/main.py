@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from loguru import logger
 
+from backend.api.exception_handlers import setup_exception_handlers
 from backend.core.config import settings
 from backend.api.v1.routers.auth import router as auth_router
 from backend.api.v1.routers.teams import router as teams_router
@@ -35,3 +36,6 @@ app.include_router(router=auth_router, prefix="/api/v1")
 app.include_router(router=teams_router, prefix="/api/v1")
 app.include_router(router=users_router, prefix="/api/v1")
 app.include_router(router=tasks_router, prefix="/api/v1")
+
+
+setup_exception_handlers(app=app)

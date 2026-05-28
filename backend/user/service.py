@@ -10,6 +10,7 @@ from backend.exceptions import (
     RoleDoesNotExistsError,
     UserAlreadyActiveError,
     InvalidPasswordError,
+    BadCredentialsError,
 )
 from backend.core.security import (
     verify_password,
@@ -97,15 +98,14 @@ class AuthService:
             Объект пользователя, если учетные данные верны
 
         Raises:
-            UserDoesNotExistsError - если пользователь с этим email не найден
-            InvalidPasswordError - если пароль неверный
+            BadCredentialsError - если почта или пароль неверные
         """
         async with self.uow:
             user = await self.uow.auth.get_user(email=email)
 
         if not user:
             logger.info(f"Пользователь с Email {email} не найден.")
-            raise UserDoesNotExistsError
+            raise BadCredentialsError("Неверный логин или пароль")
 
         try:
             await verify_password(
@@ -113,7 +113,7 @@ class AuthService:
             )
         except InvalidPasswordError:
             logger.info(f"Введен неверный пароль для пользователя {email}.")
-            raise
+            raise BadCredentialsError("Неверный логин или пароль")
 
         return user
 
@@ -164,7 +164,7 @@ class AuthService:
         # Если пользователь неактивен, токен ему не положен
         if not self._check_user_active(user=user):
             logger.info(f"Пользователь {user.name} не активен")
-            raise UserNotActiveError
+            raise UserNotActiveError("Аккаунт удален или деактивирован")
 
         # Генерируем токен
         access_token = create_access_token(data={"sub": str(user.id)})
