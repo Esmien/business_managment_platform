@@ -32,6 +32,28 @@ async def get_task(task_id: int, service: TaskServiceDepends):
     return task
 
 
+@router.get(
+    path="/",
+    response_model=list[TaskRead],
+    status_code=status.HTTP_200_OK,
+    summary="Получить список задач по фильтрам",
+)
+async def get_tasks_by_filter(
+    service: TaskServiceDepends,
+    user: CurrentUserDepends,
+    task_status: TaskStatusFilterQuery | None = None,
+    scope: TaskScopeFilterQuery = "my",
+):
+    """
+    Возвращает список задач с учетом фильтров.
+
+    Если нет доступа - 403 Forbidden
+    """
+    return await service.get_filtered_tasks(
+        user=user, scope=scope, task_status=task_status
+    )
+
+
 @router.post(
     path="/",
     response_model=TaskRead,
@@ -112,28 +134,6 @@ async def delete_task(
     Если нет доступа (не руководитель или автор) - 403 Forbidden
     """
     await service.delete_task(task_id=task_id, user=user)
-
-
-@router.get(
-    path="/",
-    response_model=list[TaskRead],
-    status_code=status.HTTP_200_OK,
-    summary="Получить список задач по фильтрам",
-)
-async def get_tasks_by_filter(
-    service: TaskServiceDepends,
-    user: CurrentUserDepends,
-    task_status: TaskStatusFilterQuery | None = None,
-    scope: TaskScopeFilterQuery = "my",
-):
-    """
-    Возвращает список задач с учетом фильтров.
-
-    Если нет доступа - 403 Forbidden
-    """
-    return await service.get_filtered_tasks(
-        user=user, scope=scope, task_status=task_status
-    )
 
 
 @router.post(

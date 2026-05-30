@@ -12,7 +12,8 @@ from backend.exceptions import (
     UserAlreadyInTeamError,
     UserExistsError,
     UserAlreadyActiveError,
-    BadCredentialsError, PasswordsMismatchError,
+    BadCredentialsError,
+    PasswordsMismatchError,
 )
 
 

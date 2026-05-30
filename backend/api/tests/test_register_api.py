@@ -5,7 +5,9 @@ from backend.api.main import app
 from backend.exceptions import RoleDoesNotExistsError
 
 
-async def test_register_success(client, valid_data_for_register, success_register_response):
+async def test_register_success(
+    client, valid_data_for_register, success_register_response
+):
     response = await client.post("/api/v1/auth/register/", json=valid_data_for_register)
 
     assert response.status_code == 201
@@ -50,8 +52,12 @@ async def test_register_role_not_exists(
     assert response.json() == reg_role_not_exists_response
 
 
-async def test_register_with_mismatch_passwords(client, data_for_register_with_mismatch_passwords, mismatch_passwords_response):
-    response = await client.post("/api/v1/auth/register/", json=data_for_register_with_mismatch_passwords)
+async def test_register_with_mismatch_passwords(
+    client, data_for_register_with_mismatch_passwords, mismatch_passwords_response
+):
+    response = await client.post(
+        "/api/v1/auth/register/", json=data_for_register_with_mismatch_passwords
+    )
 
     assert response.status_code == 400
     assert response.json() == mismatch_passwords_response

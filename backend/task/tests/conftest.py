@@ -10,10 +10,10 @@ from backend.user.schemas import UserDTO, RoleDTO
 @pytest.fixture
 def task_in():
     return TaskCreate(
-            title="Тестовая задача",
-            description="Описание тестовой задачи",
-            status=TaskStatus.OPEN
-        )
+        title="Тестовая задача",
+        description="Описание тестовой задачи",
+        status=TaskStatus.OPEN,
+    )
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def mock_user_author():
         name="Author",
         role_id=3,
         role=RoleDTO(id=3, name=RoleName.USER),
-        is_active=True
+        is_active=True,
     )
 
 
@@ -38,7 +38,7 @@ def mock_user_stranger():
         name="Stranger",
         role_id=3,
         role=RoleDTO(id=3, name=RoleName.USER),
-        is_active=True
+        is_active=True,
     )
 
 
@@ -51,7 +51,7 @@ def sample_task():
         status=TaskStatus.OPEN,
         author_id=1,  # ID совпадает с mock_user_author
         executor_id=None,
-        created_at=datetime.now(timezone.utc)
+        created_at=datetime.now(timezone.utc),
     )
 
 
@@ -62,5 +62,5 @@ def sample_comment():
         task_id=1,
         author_id=1,
         text="Тестовый комментарий",
-        created_at=datetime.now(timezone.utc)
+        created_at=datetime.now(timezone.utc),
     )
