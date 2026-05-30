@@ -5,6 +5,8 @@ import pytest_asyncio
 
 from backend.rbac.repository import RbacRepository
 from backend.rbac.service import RbacService
+from backend.task.repository import TaskRepository
+from backend.task.service import TaskService
 from backend.team.repository import TeamRepository
 from backend.team.service import TeamService
 from backend.user.repository import RegisterRepository, AuthRepository, UserRepository
@@ -107,3 +109,13 @@ def auth_repo(db_session):
 @pytest.fixture
 def user_repo(db_session):
     return UserRepository(session=db_session)
+
+
+@pytest.fixture
+def task_repo(db_session):
+    return TaskRepository(session=db_session)
+
+
+@pytest.fixture
+def task_service(mock_uow):
+    return TaskService(uow=mock_uow)

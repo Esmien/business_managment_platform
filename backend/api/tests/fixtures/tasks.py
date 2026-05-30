@@ -4,7 +4,7 @@ from backend.core.constants import TaskStatus
 
 
 @pytest.fixture
-def task_in():
+def task_in_json():
     return {
         "title": "Настроить CI/CD",
         "description": "Дописать Github Actions для деплоя",
