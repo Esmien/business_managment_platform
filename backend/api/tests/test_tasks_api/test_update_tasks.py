@@ -4,8 +4,8 @@ from backend.api.tests.test_tasks_api.get_user_override import override_get_regu
 from backend.core.constants import TaskStatus
 
 
-async def test_change_task_status(client, task_in_json):
-    create_response = await client.post("/api/v1/tasks/", json=task_in_json)
+async def test_change_task_status(client, open_task_json):
+    create_response = await client.post("/api/v1/tasks/", json=open_task_json)
     create_response_json = create_response.json()
 
     task_id = create_response_json.get("id")
@@ -17,8 +17,8 @@ async def test_change_task_status(client, task_in_json):
     assert response.json().get("status") == TaskStatus.DONE
 
 
-async def test_update_foreign_task_forbidden(client, task_in_json):
-    create_response = await client.post("/api/v1/tasks/", json=task_in_json)
+async def test_update_foreign_task_forbidden(client, open_task_json):
+    create_response = await client.post("/api/v1/tasks/", json=open_task_json)
     task_id = create_response.json().get("id")
 
     old_dep = app.dependency_overrides.get(get_current_user)
@@ -34,9 +34,9 @@ async def test_update_foreign_task_forbidden(client, task_in_json):
     assert response.json()["detail"] == "Недостаточно прав для изменения статуса"
 
 
-async def test_update_task_success(client, task_in_json):
+async def test_update_task_success(client, open_task_json):
     # Создаем исходную задачу
-    create_response = await client.post("/api/v1/tasks/", json=task_in_json)
+    create_response = await client.post("/api/v1/tasks/", json=open_task_json)
     task_id = create_response.json().get("id")
 
     # Отправляем данные для частичного обновления
@@ -49,11 +49,11 @@ async def test_update_task_success(client, task_in_json):
     assert data.get("title") == "Обновленный заголовок"
     assert data.get("description") == "Новые детали"
     # Убеждаемся, что остальные поля не затерлись
-    assert data.get("status") == task_in_json["status"]
+    assert data.get("status") == open_task_json["status"]
 
 
-async def test_update_task_nonexistent_executor(client, task_in_json):
-    create_response = await client.post("/api/v1/tasks/", json=task_in_json)
+async def test_update_task_nonexistent_executor(client, open_task_json):
+    create_response = await client.post("/api/v1/tasks/", json=open_task_json)
     task_id = create_response.json().get("id")
 
     # Пытаемся назначить пользователя, которого точно нет в БД

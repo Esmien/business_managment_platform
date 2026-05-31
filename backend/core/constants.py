@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+TASK_NOT_FOUND = "Задача не найдена."
+
 
 class RoleName(StrEnum):
     ADMIN = "admin"
@@ -12,6 +14,7 @@ class BusinessElementName(StrEnum):
     TASKS = "tasks"
     COMMENTS = "comments"
     USERS = "users"
+    EVALUATIONS = "evaluations"
 
 
 class Action(StrEnum):

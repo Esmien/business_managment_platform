@@ -14,6 +14,8 @@ from backend.exceptions import (
     UserAlreadyActiveError,
     BadCredentialsError,
     PasswordsMismatchError,
+    TaskAlreadyEvaluatedError,
+    TaskDoesNotCompletedError,
 )
 
 
@@ -72,3 +74,5 @@ def setup_exception_handlers(app: FastAPI):
     app.add_exception_handler(UserAlreadyActiveError, conflict_exception_handler)
     app.add_exception_handler(BadCredentialsError, not_authorized_exception_handler)
     app.add_exception_handler(PasswordsMismatchError, bad_request_exception_handler)
+    app.add_exception_handler(TaskDoesNotCompletedError, bad_request_exception_handler)
+    app.add_exception_handler(TaskAlreadyEvaluatedError, bad_request_exception_handler)

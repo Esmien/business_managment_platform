@@ -4,8 +4,8 @@ from backend.api.tests.test_tasks_api.get_user_override import override_get_regu
 from backend.core.constants import TaskStatus
 
 
-async def test_get_task_by_id(client, task_in_json):
-    create_response = await client.post("/api/v1/tasks/", json=task_in_json)
+async def test_get_task_by_id(client, open_task_json):
+    create_response = await client.post("/api/v1/tasks/", json=open_task_json)
     create_response_json = create_response.json()
 
     task_id = create_response_json.get("id")
@@ -14,7 +14,7 @@ async def test_get_task_by_id(client, task_in_json):
     response_json = response.json()
 
     assert response.status_code == 200
-    assert response_json.get("title") == task_in_json["title"]
+    assert response_json.get("title") == open_task_json["title"]
 
 
 async def test_get_task_not_found(client):
