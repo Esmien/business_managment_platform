@@ -5,8 +5,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from backend.core.config import settings
-from backend.core.constants import BusinessElementName, PermissionName
-from backend.exceptions import UserDoesNotExistsError, UserNotActiveError
+from backend.core.constants import BusinessElementName, Action
+from backend.exceptions import (
+    UserDoesNotExistsError,
+    UserNotActiveError,
+    AccessDeniedError,
+)
 
 from backend.api.dependencies.reg_and_auth import AuthServiceDepends
 from backend.api.dependencies.rbac import RbacServiceDepends
@@ -64,9 +68,7 @@ async def get_current_user(
 class PermissionChecker:
     """Динамический чекер прав доступа через RBAC"""
 
-    def __init__(
-        self, business_element: BusinessElementName, permission: PermissionName
-    ):
+    def __init__(self, business_element: BusinessElementName, permission: Action):
         """
         Инициализация чекера
 
@@ -99,16 +101,13 @@ class PermissionChecker:
         # Проверка прав доступа для роли пользователя к ресурсу
         has_access = await rbac_service.check_permission(
             role_id=user.role_id,
-            element_name=self.business_element,
-            permission=self.permission,
+            business_element_name=self.business_element,
+            action=self.permission,
         )
 
         # Доступа нет
         if not has_access:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="У вас нет прав на выполнение этого действия",
-            )
+            raise AccessDeniedError("Недостаточно прав для выполнения операции")
 
         return user
 

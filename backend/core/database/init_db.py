@@ -6,9 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database.engine import async_session_maker
+from backend.core.policies import DEFAULT_POLICIES
 from backend.core.security import get_password_hash
 from backend.core.constants import RoleName, BusinessElementName
-from backend.rbac.schemas import RBACPermissions
 from backend.user.models import User, Role
 from backend.rbac.models import BusinessElement, AccessRule
 
@@ -27,34 +27,43 @@ async def get_or_create(session, model, **kwargs):
     return instance
 
 
-async def _create_access_rule_if_not_exists(
-    session: AsyncSession, role_id: int, element_id: int, permissions: RBACPermissions
-):
-    query = select(AccessRule).where(
-        AccessRule.role_id == role_id,
-        AccessRule.business_element_id == element_id,
-    )
-    result = await session.execute(query)
-    rule = result.scalar_one_or_none()
-
-    if rule is None:
-        rule = AccessRule(
-            role_id=role_id,
-            business_element_id=element_id,
-            **permissions.model_dump(exclude_none=True),
-        )
-        session.add(rule)
-
-
 async def init_basic_data(
     session: AsyncSession, password_hasher: Callable = get_password_hash
 ):
-    logger.info("Начинаем инициализацию базовых данных...")
-    admin_role = await get_or_create(session, Role, name=RoleName.ADMIN)
-    manager_role = await get_or_create(session, Role, name=RoleName.MANAGER)
-    user_role = await get_or_create(session, Role, name=RoleName.USER)
+    roles_map = {}
+    for role_name in RoleName:
+        role = await get_or_create(session, Role, name=role_name)
+        roles_map[role_name] = role
 
-    roles_map = {"admin": admin_role, "manager": manager_role, "user": user_role}
+    elements_map = {}
+    for element_name in BusinessElementName:
+        element = await get_or_create(session, BusinessElement, name=element_name)
+        elements_map[element_name] = element
+
+    for role_name, role_obj in roles_map.items():
+        for element_name, element_obj in elements_map.items():
+            # Достаем JSON для конкретной роли и сущности (если нет - пустой словарь)
+            policies = DEFAULT_POLICIES.get(role_name, {}).get(element_name, {})
+
+            # Проверяем, есть ли уже правило в БД
+            stmt = select(AccessRule).where(
+                AccessRule.role_id == role_obj.id,
+                AccessRule.business_element_id == element_obj.id,
+            )
+            result = await session.execute(stmt)
+            rule = result.scalar_one_or_none()
+
+            if not rule:
+                # Создаем новое правило
+                rule = AccessRule(
+                    role_id=role_obj.id,
+                    business_element_id=element_obj.id,
+                    policies=policies,
+                )
+                session.add(rule)
+            else:
+                # Если правило есть, обновляем JSON (полезно при добавлении новых фич в код)
+                rule.policies = policies
 
     for role in roles_map:
         email = f"{role}@{role}.com"
@@ -83,39 +92,6 @@ async def init_basic_data(
     session.add(inactive_user)
     await session.flush()
     await session.refresh(inactive_user)
-
-    permissions_map = {
-        "admin": RBACPermissions(
-            read_all_permission=True,
-            update_all_permission=True,
-            delete_all_permission=True,
-            create_permission=True,
-            read_permission=True,
-            update_permission=True,
-            delete_permission=True,
-        ),
-        "manager": RBACPermissions(
-            read_all_permission=True,
-            create_permission=True,
-            read_permission=True,
-            update_permission=True,
-        ),
-        "user": RBACPermissions(read_permission=True),
-    }
-
-    # Создаем бизнес-элементы для проверки RBAC
-    teams_element = await get_or_create(
-        session, BusinessElement, name=BusinessElementName.TEAMS
-    )
-
-    for key, value in roles_map.items():
-        await _create_access_rule_if_not_exists(
-            session=session,
-            role_id=value.id,
-            element_id=teams_element.id,
-            permissions=permissions_map[key],
-        )
-        logger.success(f"Права для {key} на команды успешно выданы.")
 
     await session.commit()
     logger.info("Инициализация данных успешно завершена!")

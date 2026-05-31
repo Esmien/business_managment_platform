@@ -1,5 +1,5 @@
-from loguru import logger
-
+from backend.core.constants import BusinessElementName
+from backend.core.policies import AccessLevel
 from backend.core.uow import IUnitOfWork
 
 
@@ -8,31 +8,40 @@ class RbacService:
         self.uow = uow
 
     async def check_permission(
-        self, role_id: int, element_name: str, permission: str
+        self,
+        role_id: int,
+        business_element_name: BusinessElementName,
+        action: str,  # Например: "create", "read", "update"
+        context: dict | None = None,
     ) -> bool:
         """
-        Проверяет права доступа к ресурсу для роли
-
-        Args:
-            role_id - проверяемая роль
-            element_name - ресурс, к которому проверяется доступ
-            permission - правило доступа к ресурсу
-
-        Returns:
-            True - если доступ разрешен, иначе False
+        Универсальный метод проверки прав через JSONB-политики.
         """
+        context = context or {}
+
         async with self.uow:
-            rule = await self.uow.rbac.get_access_rule(role_id, element_name)
-
-        if not rule:
-            logger.info(
-                f"Не найдено правило доступа к {element_name} для роли ID {role_id}."
+            # Предполагается, что репозиторий умеет искать правило по имени сущности
+            rule = await self.uow.rbac.get_access_rule(
+                role_id=role_id, business_element_name=business_element_name
             )
+
+        if not rule or not rule.policies:
             return False
 
-        # Если передано несуществующее правило
-        if not hasattr(rule, permission):
-            logger.warning(f"Неизвестный permission: {permission}")
+        required_access = rule.policies.get(action)
+        if not required_access:
             return False
 
-        return getattr(rule, permission, False)
+        # Политика разрешает действие всем
+        if required_access == AccessLevel.ALL:
+            return True
+
+        # Политика требует причастности к ресурсу
+        if required_access == AccessLevel.PARTICIPANT:
+            return context.get("is_participant") is True
+
+        # Политика требует быть создателем ресурсу
+        if required_access == AccessLevel.AUTHOR:
+            return context.get("is_author") is True
+
+        return False

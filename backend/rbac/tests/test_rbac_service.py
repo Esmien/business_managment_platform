@@ -1,56 +1,65 @@
 import pytest
+from backend.core.constants import BusinessElementName
 from backend.rbac.schemas import AccessRuleDTO
+from backend.core.policies import AccessLevel
 
 
 @pytest.mark.parametrize(
-    "rule_exists, permission_name, permission_value, expected_result",
+    "rule_exists, action, rule_access, context, expected_result",
     [
-        (True, "read_permission", True, True),  # Правило есть, право выдано
-        (True, "create_permission", False, False),  # Правило есть, права НЕТ
+        (True, "read", AccessLevel.ALL, None, True),  # Доступ разрешен всем
         (
             True,
-            "unknown_permission",
-            False,
-            False,
-        ),  # Запрос кривого/несуществующего permission
+            "create",
+            AccessLevel.PARTICIPANT,
+            {"is_participant": True},
+            True,
+        ),  # Участник может создать
         (
+            True,
+            "create",
+            AccessLevel.PARTICIPANT,
+            {"is_participant": False},
             False,
-            "read_permission",
-            False,
-            False,
-        ),  # Правила для роли/ресурса вообще нет в БД
+        ),  # Не участник - отказ
+        (
+            True,
+            "update",
+            AccessLevel.AUTHOR,
+            {"is_author": True},
+            True,
+        ),  # Автор может обновить
+        (True, "unknown_action", AccessLevel.ALL, None, False),  # Неизвестное действие
+        (False, "read", None, None, False),  # Правила нет в БД
     ],
 )
 async def test_check_permission(
-    rbac_service,
-    mock_uow,
-    rule_exists,
-    permission_name,
-    permission_value,
-    expected_result,
+    rbac_service, mock_uow, rule_exists, action, rule_access, context, expected_result
 ):
     if rule_exists:
-        # Имитируем DTO, которое возвращает репозиторий
+        # Если проверяем неизвестное действие, кладем в базу валидное (например, "read"),
+        # чтобы неизвестного действия там точно не оказалось.
+        policy_dict = (
+            {"read": rule_access}
+            if action == "unknown_action"
+            else {action: rule_access}
+        )
+
         rule_data = {
             "id": 1,
             "business_element_id": 1,
             "role_id": 1,
-            "read_permission": False,
-            "create_permission": False,
+            "policies": policy_dict if rule_access else {},
         }
-        # Если тест проверяет валидное поле, подменяем его значением из параметров
-        if permission_name in rule_data:
-            rule_data[permission_name] = permission_value
-
         mock_uow.rbac.get_access_rule.return_value = AccessRuleDTO(**rule_data)
     else:
         mock_uow.rbac.get_access_rule.return_value = None
 
-    # Вызываем тестируемый метод
     result = await rbac_service.check_permission(
-        role_id=1, element_name="teams", permission=permission_name
+        role_id=1,
+        business_element_name=BusinessElementName.TASKS,
+        action=action,
+        context=context,
     )
 
-    # Проверки
     assert result is expected_result
-    mock_uow.rbac.get_access_rule.assert_called_once_with(1, "teams")

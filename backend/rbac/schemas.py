@@ -1,5 +1,15 @@
 from pydantic import BaseModel, ConfigDict
 
+from backend.core.constants import AccessLevel
+
+
+class AccessRules(BaseModel):
+    create: AccessLevel | None = None
+    read: AccessLevel | None = None
+    update: AccessLevel | None = None
+    delete: AccessLevel | None = None
+    change_status: AccessLevel | None = None
+
 
 class PermissionsBase(BaseModel):
     """Базовый класс с набором всех возможных прав"""
