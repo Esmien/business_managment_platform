@@ -10,7 +10,7 @@ class RbacRepository:
         self.session = session
 
     async def get_access_rule(
-        self, role_id: int, element_name: str
+        self, role_id: int, business_element_name: str
     ) -> AccessRuleDTO | None:
         """
         Возвращает правило доступа для указанной роли на указанный ресурс.
@@ -27,7 +27,7 @@ class RbacRepository:
             .join(BusinessElement)
             .where(
                 AccessRule.role_id == role_id,
-                BusinessElement.name == element_name,
+                BusinessElement.name == business_element_name,
             )
         )
         result = await self.session.execute(statement=stmt)

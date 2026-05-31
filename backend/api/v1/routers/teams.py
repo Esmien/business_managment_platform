@@ -10,7 +10,7 @@ from backend.api.dependencies.teams import (
     TeamCreateBody,
     TeamJoinBody,
 )
-from backend.core.constants import BusinessElementName, PermissionName
+from backend.core.constants import BusinessElementName, Action
 from backend.core.utils.error_schemas import ErrorResponseSchema
 from backend.team.schemas import TeamWithMembersRead, TeamRead
 
@@ -50,7 +50,7 @@ async def get_team(
             # Проверяет права на создание команды
             PermissionChecker(
                 business_element=BusinessElementName.TEAMS,
-                permission=PermissionName.CREATE,
+                permission=Action.CREATE,
             )
         )
     ],
