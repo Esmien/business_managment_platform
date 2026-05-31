@@ -4,13 +4,7 @@ from pydantic import BaseModel, ConfigDict
 class PermissionsBase(BaseModel):
     """Базовый класс с набором всех возможных прав"""
 
-    read_permission: bool = False
-    read_all_permission: bool = False
-    create_permission: bool = False
-    update_permission: bool = False
-    update_all_permission: bool = False
-    delete_permission: bool = False
-    delete_all_permission: bool = False
+    policies: dict = {}
 
 
 class RBACPermissions(PermissionsBase):
