@@ -3,6 +3,7 @@ from types import TracebackType
 
 from backend.comment.repository import CommentRepository
 from backend.core.database.engine import async_session_maker
+from backend.evaluation.repository import EvaluationRepository
 from backend.user.repository import UserRepository, AuthRepository, RegisterRepository
 from backend.team.repository import TeamRepository
 from backend.task.repository import TaskRepository
@@ -19,6 +20,7 @@ class IUnitOfWork(ABC):
     tasks: TaskRepository
     comments: CommentRepository
     rbac: RbacRepository
+    evaluations: EvaluationRepository
 
     @abstractmethod
     def __init__(self): ...
@@ -46,13 +48,14 @@ class UnitOfWork(IUnitOfWork):
         self._session_cm = self.session_factory()
         self.session = await self._session_cm.__aenter__()
 
-        self.users = UserRepository(self.session)
-        self.auth = AuthRepository(self.session)
-        self.register = RegisterRepository(self.session)
-        self.teams = TeamRepository(self.session)
-        self.tasks = TaskRepository(self.session)
-        self.comments = CommentRepository(self.session)
-        self.rbac = RbacRepository(self.session)
+        self.users = UserRepository(session=self.session)
+        self.auth = AuthRepository(session=self.session)
+        self.register = RegisterRepository(session=self.session)
+        self.teams = TeamRepository(session=self.session)
+        self.tasks = TaskRepository(session=self.session)
+        self.comments = CommentRepository(session=self.session)
+        self.rbac = RbacRepository(session=self.session)
+        self.evaluations = EvaluationRepository(session=self.session)
 
         return self
 

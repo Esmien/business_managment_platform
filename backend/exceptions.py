@@ -42,6 +42,18 @@ class TaskDoesNotExistsError(Exception):
     pass
 
 
+class TaskAlreadyEvaluatedError(Exception):
+    pass
+
+
+class TaskDoesNotCompletedError(Exception):
+    pass
+
+
+class EvaluationDoesNotExistsError(Exception):
+    pass
+
+
 class BadCredentialsError(Exception):
     pass
 

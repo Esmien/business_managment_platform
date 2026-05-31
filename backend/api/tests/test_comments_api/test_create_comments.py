@@ -23,7 +23,7 @@ async def test_add_comment_task_not_found(client):
     assert response.json()["detail"] == "Задача не найдена."
 
 
-async def test_add_comment_forbidden(client, task_in_json):
+async def test_add_comment_forbidden(client):
     # Переключаемся на обычного пользователя, который не является автором/исполнителем
     old_dep = app.dependency_overrides.get(get_current_user)
     app.dependency_overrides[get_current_user] = override_get_regular_user

@@ -16,6 +16,7 @@ DEFAULT_POLICIES = {
         BusinessElementName.COMMENTS: FULL_ACCESS,
         BusinessElementName.TEAMS: FULL_ACCESS,
         BusinessElementName.USERS: FULL_ACCESS,
+        BusinessElementName.EVALUATIONS: FULL_ACCESS,
     },
     RoleName.MANAGER: {
         BusinessElementName.TASKS: FULL_ACCESS | {"change_status": AccessLevel.ALL},
@@ -24,6 +25,7 @@ DEFAULT_POLICIES = {
         BusinessElementName.USERS: AccessRules(read=AccessLevel.ALL).model_dump(
             exclude_none=True
         ),
+        BusinessElementName.EVALUATIONS: FULL_ACCESS,
     },
     RoleName.USER: {
         # Вот тут вся магия ABAC: доступ только причастным (participant/author)
@@ -46,5 +48,8 @@ DEFAULT_POLICIES = {
         BusinessElementName.USERS: AccessRules(read=AccessLevel.ALL).model_dump(
             exclude_none=True
         ),
+        BusinessElementName.EVALUATIONS: AccessRules(
+            read=AccessLevel.PARTICIPANT
+        ).model_dump(exclude_none=True),
     },
 }
