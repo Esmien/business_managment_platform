@@ -46,6 +46,8 @@ def mock_uow():
     uow.tasks = AsyncMock()
     uow.comments = AsyncMock()
     uow.teams = AsyncMock()
+    uow.rbac = AsyncMock()
+    uow.evaluations = AsyncMock()
 
     # Мокаем методы самого UoW
     uow.commit = AsyncMock()

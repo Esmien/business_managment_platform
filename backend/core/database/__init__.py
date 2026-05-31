@@ -13,10 +13,11 @@ def load_all_models() -> tuple:
     from backend.task.models import Task
     from backend.rbac.models import AccessRule, BusinessElement
     from backend.comment.models import Comment
+    from backend.evaluation.models import Evaluation
 
     logger.info("Реестр моделей SQLAlchemy успешно инициализирован")
 
-    return User, Role, Team, Task, Comment, AccessRule, BusinessElement
+    return User, Role, Team, Task, Comment, AccessRule, BusinessElement, Evaluation
 
 
 __all__ = ["Base", "load_all_models"]
