@@ -1,5 +1,6 @@
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import BigInteger, String, ForeignKey, Boolean
+from sqlalchemy import BigInteger, String, ForeignKey
 
 from backend.core.database.engine import Base
 
@@ -24,11 +25,4 @@ class AccessRule(Base):
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
     role = relationship("Role")
 
-    # Все возможные права доступа
-    read_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    read_all_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    create_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    update_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    update_all_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    delete_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    delete_all_permission: Mapped[bool] = mapped_column(Boolean, default=False)
+    policies: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")

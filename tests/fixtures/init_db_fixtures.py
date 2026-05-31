@@ -43,14 +43,16 @@ async def prepare_schema():
 async def prepare_data():
     """Очищает таблицы и заливает базовые данные для каждого теста"""
 
-    # 2.1 Жестко очищаем все таблицы
+    # 2.1 Очищаем только транзакционные таблицы, исключая статические справочники
     async with fixture_engine.begin() as conn:
-        # Собираем имена всех таблиц из метадаты
-        table_names = ", ".join(Base.metadata.tables.keys())
+        exclude_tables = {"roles", "business_elements", "access_rules"}
+        tables_to_truncate = [
+            t for t in Base.metadata.tables.keys() if t not in exclude_tables
+        ]
 
-        if table_names:
-            # RESTART IDENTITY - сбрасывает счетчики (id=1)
-            # CASCADE - игнорирует foreign keys и сносит связанные данные
+        if tables_to_truncate:
+            table_names = ", ".join(tables_to_truncate)
+            # RESTART IDENTITY сбросит счетчики ID для юзеров и задач
             await conn.execute(
                 text(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE;")
             )

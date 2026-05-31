@@ -1,18 +1,18 @@
 """init
 
-Revision ID: 723416539a9b
+Revision ID: 82b78c601dee
 Revises: 
-Create Date: 2026-05-19 23:01:55.432335
+Create Date: 2026-05-31 16:35:03.369622
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '723416539a9b'
+revision: str = '82b78c601dee'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,7 +29,7 @@ def upgrade() -> None:
     )
     op.create_table('roles',
     sa.Column('id', sa.BigInteger(), nullable=False),
-    sa.Column('name', sa.Enum('USER', 'ADMIN', 'MANAGER', name='rolename', native_enum=False, length=50), nullable=False),
+    sa.Column('name', sa.Enum('user', 'admin', 'manager', name='rolename', native_enum=False, length=50), nullable=False),
     sa.CheckConstraint("name IN ('user', 'admin', 'manager')", name='check_valid_role_name'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
@@ -48,13 +48,7 @@ def upgrade() -> None:
     sa.Column('id', sa.BigInteger(), nullable=False),
     sa.Column('business_element_id', sa.BigInteger(), nullable=False),
     sa.Column('role_id', sa.BigInteger(), nullable=False),
-    sa.Column('read_permission', sa.Boolean(), nullable=False),
-    sa.Column('read_all_permission', sa.Boolean(), nullable=False),
-    sa.Column('create_permission', sa.Boolean(), nullable=False),
-    sa.Column('update_permission', sa.Boolean(), nullable=False),
-    sa.Column('update_all_permission', sa.Boolean(), nullable=False),
-    sa.Column('delete_permission', sa.Boolean(), nullable=False),
-    sa.Column('delete_all_permission', sa.Boolean(), nullable=False),
+    sa.Column('policies', postgresql.JSONB(astext_type=sa.Text()), server_default='{}', nullable=False),
     sa.ForeignKeyConstraint(['business_element_id'], ['business_elements.id'], ),
     sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -79,7 +73,7 @@ def upgrade() -> None:
     sa.Column('title', sa.String(length=50), nullable=False, comment='Название задачи'),
     sa.Column('description', sa.Text(), nullable=True, comment='Подробности задачи'),
     sa.Column('expire', sa.Date(), nullable=True, comment='Дедлайн'),
-    sa.Column('status', sa.Enum('OPEN', 'IN_PROGRESS', 'DONE', name='taskstatus', native_enum=False, length=50), nullable=False),
+    sa.Column('status', sa.Enum('open', 'in_progress', 'done', name='taskstatus', native_enum=False, length=50), nullable=False),
     sa.Column('author_id', sa.BigInteger(), nullable=True),
     sa.Column('executor_id', sa.BigInteger(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),

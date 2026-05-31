@@ -4,8 +4,12 @@ import jwt
 from fastapi import HTTPException
 
 from backend.api.dependencies.permissions import get_current_user, PermissionChecker
-from backend.core.constants import BusinessElementName, PermissionName
-from backend.exceptions import UserDoesNotExistsError, UserNotActiveError
+from backend.core.constants import BusinessElementName, Action
+from backend.exceptions import (
+    UserDoesNotExistsError,
+    UserNotActiveError,
+    AccessDeniedError,
+)
 from backend.user.schemas import UserDTO
 
 # Секреты для тестов
@@ -76,14 +80,17 @@ async def test_get_current_user_service_errors(
     "has_access, expected_exception",
     [
         (True, None),  # Права есть
-        (False, HTTPException),  # Прав нет (403)
+        (
+            False,
+            AccessDeniedError,
+        ),  # ИСПРАВЛЕНО: Ждем AccessDeniedError вместо HTTPException
     ],
 )
 async def test_permission_checker(rbac_service_mock, has_access, expected_exception):
     rbac_service_mock.check_permission.return_value = has_access
 
     checker = PermissionChecker(
-        business_element=BusinessElementName.TEAMS, permission=PermissionName.CREATE
+        business_element=BusinessElementName.TEAMS, permission=Action.CREATE
     )
 
     user = UserDTO(
@@ -96,15 +103,16 @@ async def test_permission_checker(rbac_service_mock, has_access, expected_except
     )
 
     if expected_exception:
-        with pytest.raises(expected_exception) as exc_info:
+        # ИСПРАВЛЕНО: Убрали проверку status_code, так как AccessDeniedError сам всё разрулит
+        with pytest.raises(expected_exception):
             await checker(user=user, rbac_service=rbac_service_mock)
-        assert exc_info.value.status_code == 403
     else:
         result_user = await checker(user=user, rbac_service=rbac_service_mock)
         assert result_user == user
 
+    # ИСПРАВЛЕНО: Заменили 'permission' на 'action'
     rbac_service_mock.check_permission.assert_called_once_with(
         role_id=2,
-        element_name=BusinessElementName.TEAMS,
-        permission=PermissionName.CREATE,
+        business_element_name=BusinessElementName.TEAMS,
+        action=Action.CREATE,
     )
