@@ -2,7 +2,12 @@ from loguru import logger
 
 from backend.core.uow import IUnitOfWork
 from backend.core.constants import RoleName, TaskStatus
-from backend.task.schemas import TaskCreate, TaskUpdate, TaskRead, TaskChangeStatus
+from backend.task.schemas import (
+    TaskCreate,
+    TaskUpdate,
+    TaskRead,
+    TaskChangeStatus,
+)
 from backend.user.schemas import UserDTO
 from backend.exceptions import (
     AccessDeniedError,

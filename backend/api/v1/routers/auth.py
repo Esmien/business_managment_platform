@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from loguru import logger
 
 from backend.api.dependencies.permissions import CurrentUserDepends
@@ -10,14 +10,6 @@ from backend.api.dependencies.reg_and_auth import (
 
 from backend.user.schemas import UserRead, Token, UserRegister, UserChangeStatus
 from backend.core.utils.error_schemas import ErrorResponseSchema
-from backend.exceptions import (
-    UserExistsError,
-    RoleDoesNotExistsError,
-    InvalidPasswordError,
-    UserDoesNotExistsError,
-    UserNotActiveError,
-    UserAlreadyActiveError,
-)
 
 
 router = APIRouter(prefix="/auth", tags=["Аутентификация"])
@@ -51,18 +43,7 @@ async def register_user(
 
     # Прогоняем пайплайн регистрации пользователя:
     # проверка на существование->проверка наличия роли user в БД->присвоение роли и регистрация
-    try:
-        new_user = await service.register_user(user_in=user_in)
-    except UserExistsError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
-    except RoleDoesNotExistsError as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(e),
-        )
+    new_user = await service.register_user(user_in=user_in)
 
     return new_user
 
@@ -85,15 +66,8 @@ async def restore_user(
 
     # Проверка на корректность кредов и активность.
     # Если креды в порядке и пользователь неактивен, то активируем
-    try:
-        user = await service.check_users_creds(form_data.username, form_data.password)
-        await service.activate_user(user=user)
-    except UserAlreadyActiveError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except (UserDoesNotExistsError, InvalidPasswordError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль"
-        )
+    user = await service.check_users_creds(form_data.username, form_data.password)
+    await service.activate_user(user=user)
 
     logger.info(f"Пользователь {user.name} восстановлен")
     return UserChangeStatus(
@@ -118,19 +92,8 @@ async def login(
     Пользователь есть, но неактивен - 403 Forbidden
     """
     # Проверяем креды, получаем JWT-токен
-    try:
-        user = await service.check_users_creds(form_data.username, form_data.password)
-        token = service.get_auth_token(user=user)
-    # Если что-то не в порядке - сообщаем в респонсе
-    except (UserDoesNotExistsError, InvalidPasswordError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль"
-        )
-    except UserNotActiveError:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Аккаунт удален или деактивирован",
-        )
+    user = await service.check_users_creds(form_data.username, form_data.password)
+    token = service.get_auth_token(user=user)
 
     return token
 
