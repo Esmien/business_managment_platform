@@ -15,8 +15,8 @@ def task_repo(db_session):
 
 
 @pytest.fixture
-def task_service(mock_uow):
-    return TaskService(uow=mock_uow)
+def task_service(mock_uow, mock_rbac_service):
+    return TaskService(uow=mock_uow, rbac_service=mock_rbac_service)
 
 
 @pytest.fixture
@@ -61,7 +61,7 @@ def sample_task():
         title="Тест",
         description="Описание",
         status=TaskStatus.OPEN,
-        author_id=1,  # ID совпадает с mock_user_author
+        author_id=1,
         executor_id=None,
         created_at=datetime.now(timezone.utc),
     )
