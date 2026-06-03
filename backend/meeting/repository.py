@@ -55,24 +55,22 @@ class MeetingRepository:
     async def create_meeting(
         self, meeting_in: MeetingCreateDTO
     ) -> MeetingReadWithParticipants:
-        """
-        Создает встречу и связывает её с участниками (Many-to-Many).
-        """
-        # Отделяем participant_ids, так как такого поля в БД нет
+
         meeting_data = meeting_in.model_dump(exclude={"participant_ids"})
         participant_ids = meeting_in.participant_ids
 
-        # Создаем пустой объект встречи
         new_meeting = Meeting(**meeting_data)
 
-        # Если переданы участники, достаем их инстансы из БД
+        # Если участники есть — достаем их и присваиваем весь список разом
         if participant_ids:
             stmt = select(User).where(User.id.in_(participant_ids))
             result = await self.session.execute(stmt)
-            participants = result.scalars().all()
-
-            # Привязываем участников к встрече
-            new_meeting.participants.extend(participants)
+            # Явно приводим к list, чтобы IDE понимала, что это список
+            new_meeting.participants = list(result.scalars().all())
+        else:
+            # Если участников нет — присваиваем пустой список,
+            # чтобы заглушить lazy load при валидации Pydantic
+            new_meeting.participants = []
 
         self.session.add(new_meeting)
         await self.session.flush()
@@ -145,3 +143,27 @@ class MeetingRepository:
 
         await self.session.delete(meeting)
         await self.session.flush()
+
+    async def get_meetings_by_date_range(
+        self, user_id: int, start_dt: datetime, end_dt: datetime
+    ) -> list[MeetingReadWithParticipants]:
+        stmt = (
+            select(Meeting)
+            .options(selectinload(Meeting.participants))
+            .where(
+                and_(
+                    or_(
+                        Meeting.author_id == user_id,
+                        Meeting.participants.any(User.id == user_id),
+                    ),
+                    Meeting.datetime_start >= start_dt,
+                    Meeting.datetime_start <= end_dt,
+                )
+            )
+            .order_by(Meeting.datetime_start.asc())
+        )
+        result = await self.session.execute(stmt)
+        return [
+            MeetingReadWithParticipants.model_validate(m)
+            for m in result.scalars().all()
+        ]

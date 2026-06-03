@@ -17,7 +17,7 @@ class MeetingBase(BaseModel):
 
     @model_validator(mode="after")
     def validate_datetime(self):
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
 
         # Конвертируем в UTC, если таймзона передана, иначе просто ставим метку UTC
         start_tz = (
@@ -30,6 +30,8 @@ class MeetingBase(BaseModel):
             if self.datetime_end.tzinfo is None
             else self.datetime_end.astimezone(timezone.utc)
         )
+
+        start_tz = start_tz.replace(second=0, microsecond=0)
 
         if start_tz < now:
             raise DatetimeCompatibleError(
