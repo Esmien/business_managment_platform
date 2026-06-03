@@ -2,8 +2,12 @@ from loguru import logger
 
 from backend.core.uow import IUnitOfWork
 
-from backend.core.constants import BusinessElementName, Action, RoleName
-from backend.exceptions import MeetingOverlapError, MeetingDoesNotExistsError
+from backend.core.constants import BusinessElementName, Action, AccessLevel
+from backend.exceptions import (
+    MeetingOverlapError,
+    MeetingDoesNotExistsError,
+    AccessDeniedError,
+)
 from backend.meeting.schemas import (
     MeetingCreate,
     MeetingCreateDTO,
@@ -80,21 +84,19 @@ class MeetingService:
         self, user: UserDTO
     ) -> list[MeetingReadWithParticipants]:
         async with self.uow:
-            await self.rbac.enforce_permission(
+            access_level = await self.rbac.get_list_access_level(
                 user=user,
                 business_element_name=BusinessElementName.MEETINGS,
                 action=Action.READ,
-                context=AccessContextDTO(
-                    is_participant=True
-                ),  # Ставим True, чтобы пропустить базовую проверку для обычных юзеров
                 error_msg="У вас нет прав для просмотра встреч",
             )
 
-            # Если руководитель (ADMIN / MANAGER) - отдаем всё. Иначе - только свои.
-            is_manager = user.role.name in [RoleName.ADMIN, RoleName.MANAGER]
-
-            # Передаем None для руководителей, чтобы отключить WHERE в алхимии
-            filter_user_id = None if is_manager else user.id
+            if access_level == AccessLevel.ALL:
+                filter_user_id = None
+            elif access_level in (AccessLevel.PARTICIPANT, AccessLevel.AUTHOR):
+                filter_user_id = user.id
+            else:
+                raise AccessDeniedError("Неизвестный уровень доступа")
 
             return await self.uow.meetings.get_meetings(user_id=filter_user_id)
 

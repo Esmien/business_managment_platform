@@ -1,4 +1,4 @@
-from backend.core.constants import BusinessElementName
+from backend.core.constants import BusinessElementName, Action
 from backend.core.policies import AccessLevel
 from backend.core.uow import IUnitOfWork
 from backend.exceptions import AccessDeniedError
@@ -9,6 +9,32 @@ from backend.user.schemas import UserDTO
 class RbacService:
     def __init__(self, uow: IUnitOfWork):
         self.uow = uow
+
+    async def get_list_access_level(
+        self,
+        user: UserDTO,
+        business_element_name: BusinessElementName,
+        action: Action,
+        error_msg: str = "У вас нет прав для просмотра этого списка",
+    ) -> AccessLevel:
+        """
+        Используется для получения списков (коллекций).
+        Проверяет наличие базовых прав и возвращает уровень доступа для фильтрации в БД.
+        """
+        # Здесь мы достаем правило так же, как ты это делаешь в enforce_permission
+        rule = await self.uow.rbac.get_access_rule(
+            role_id=user.role_id, business_element_name=business_element_name
+        )
+
+        if not rule or not rule.policies:
+            raise AccessDeniedError(error_msg)
+
+        access_level = rule.policies.get(action)
+
+        if not access_level:
+            raise AccessDeniedError(error_msg)
+
+        return AccessLevel(access_level)
 
     async def check_permission(
         self,
