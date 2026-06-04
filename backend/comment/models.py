@@ -11,8 +11,8 @@ from backend.user.models import User
 class Comment(Base):
     """
     ORM-модель комментариев.
-    Привязана к задаче (Task), связь Many to On,
-    к автору (User), связь Many to On
+    Привязана к задаче (Task), связь Many to One,
+    к автору (User), связь Many to One
     """
 
     __tablename__ = "comments"
