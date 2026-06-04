@@ -13,6 +13,18 @@ class CalendarService:
     async def get_user_calendar(
         self, user: UserDTO, year: int, month: int, day: int | None = None
     ) -> CalendarResponse:
+        """
+        Собирает DTO со списками встреч и задач за выбранные даты
+
+        Args:
+            user - позьзователь, который запрашивает данные
+            year - год, за который нужны данные
+            month - месяц, за который нужны данные
+            day - день, за который нужны данные
+
+        Returns:
+            DTO со всеми встречами и задачами пользователя
+        """
 
         # Вычисляем границы для типа date (для Задач)
         if day:
