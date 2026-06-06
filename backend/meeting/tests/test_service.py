@@ -15,7 +15,6 @@ from backend.meeting.schemas import (
 )
 
 
-@pytest.mark.asyncio
 class TestMeetingService:
     async def test_create_meeting_success(
         self,
