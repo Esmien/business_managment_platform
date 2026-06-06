@@ -1,13 +1,11 @@
 from datetime import datetime, timedelta, timezone
 
-import pytest
 
 from backend.meeting.repository import MeetingRepository
 from backend.meeting.schemas import MeetingCreateDTO, MeetingUpdateDTO
 from backend.user.models import User
 
 
-@pytest.mark.asyncio
 class TestMeetingRepository:
     """
     Полный набор тестов для слоя данных (MeetingRepository).

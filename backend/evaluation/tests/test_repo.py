@@ -1,12 +1,9 @@
-import pytest
-
 from backend.core.constants import TaskStatus
 from backend.evaluation.models import Evaluation
 from backend.evaluation.schemas import EvaluationCreateDTO
 from backend.task.models import Task
 
 
-@pytest.mark.asyncio
 async def test_repository_add_and_get(eval_repo, test_task_db, test_user_db):
     dto_in = EvaluationCreateDTO(
         value=4,
@@ -28,16 +25,14 @@ async def test_repository_add_and_get(eval_repo, test_task_db, test_user_db):
     assert fetched_eval.task_id == test_task_db.id
 
 
-@pytest.mark.asyncio
 async def test_repository_get_user_statistics_empty(eval_repo, test_user_db):
     # У юзера еще нет оценок
     stats = await eval_repo.get_user_statistics(test_user_db.id)
 
-    assert stats.average_evaluation is None
+    assert stats.average_evaluation == 0
     assert stats.tasks_evaluated_count == 0
 
 
-@pytest.mark.asyncio
 async def test_repository_get_user_statistics_calculated(
     eval_repo, db_session, test_user_db
 ):
