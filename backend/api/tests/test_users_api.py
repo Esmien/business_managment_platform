@@ -40,7 +40,7 @@ async def test_get_my_statistics_empty(client):
 
     assert response.status_code == 200
     data = response.json()
-    assert data["average_evaluation"] is None
+    assert data["average_evaluation"] == 0
     assert data["tasks_evaluated_count"] == 0
 
 
