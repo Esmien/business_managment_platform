@@ -15,20 +15,24 @@ class TaskRepository(BaseRepository[Task, TaskRead]):
 
     async def get_tasks_with_filters(
         self,
+        offset: int,
+        limit: int,
         user_id: int | None = None,
         team_id: int | None = None,
         task_status: str | None = None,
-    ) -> list[TaskRead]:
+    ) -> tuple[list[TaskRead], int]:
         """
         Получает задачи по фильтрам
 
         Args:
+            offset - смещение указателя при чтении большого количества данных
+            limit - ограничение на количество выдаваемых за раз данных
             user_id - ID запрашивающего задачи пользователя
             team_id - ID команды, чьи задачи запрашиваются
             task_status - статус искомых задач
 
         Returns:
-            Список отфильтрованных задач
+            Список отфильтрованных задач и их общее количество
         """
         stmt = select(Task)
 
@@ -44,23 +48,23 @@ class TaskRepository(BaseRepository[Task, TaskRead]):
                 User.team_id == team_id
             )
 
-        result = await self.session.execute(statement=stmt)
-
-        return [TaskRead.model_validate(obj=task) for task in result.scalars().all()]
+        return await self._paginate_statement(stmt=stmt, limit=limit, offset=offset)
 
     async def get_tasks_by_date_range(
-        self, user_id: int, start_date: date, end_date: date
-    ) -> list[TaskRead]:
+        self, offset: int, limit: int, user_id: int, start_date: date, end_date: date
+    ) -> tuple[list[TaskRead], int]:
         """
         Возвращает все доступные пользователю задачи за выбранный период
 
         Args:
+            offset - смещение указателя при чтении большого количества данных
+            limit - ограничение на количество выдаваемых за раз данных
             user_id - ID запрашивающего пользователя
             start_date - начало периода
             end_date - конец периода
 
         Returns:
-            Список отфильтрованных задач
+            Пагинированный список отфильтрованных задач и общее их количество
         """
         stmt = select(Task).where(
             and_(
@@ -69,5 +73,5 @@ class TaskRepository(BaseRepository[Task, TaskRead]):
                 Task.expire <= end_date,
             )
         )
-        result = await self.session.execute(statement=stmt)
-        return [TaskRead.model_validate(obj=t) for t in result.scalars().all()]
+
+        return await self._paginate_statement(stmt=stmt, limit=limit, offset=offset)
