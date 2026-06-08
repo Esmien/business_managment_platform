@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.core.database.engine import async_session_maker
 from backend.core.policies import DEFAULT_POLICIES
 from backend.core.security import get_password_hash
-from backend.core.constants import RoleName, BusinessElementName
+from backend.core.enums import RoleName, BusinessElementName
 from backend.user.models import User, Role
 from backend.rbac.models import BusinessElement, AccessRule
 
@@ -82,16 +82,21 @@ async def init_basic_data(
             await session.flush()
             await session.refresh(new_user)
 
-    inactive_user = User(
-        email="inactive_user@user.com",
-        hashed_password=await password_hasher("user"),
-        role_id=roles_map["user"].id,
-        name="Inactive user",
-        is_active=False,
-    )
-    session.add(inactive_user)
-    await session.flush()
-    await session.refresh(inactive_user)
+    stmt = select(User).filter_by(email="inactive_user@user.com")
+    result = await session.execute(stmt)
+    inactive_user = result.scalar_one_or_none()
+
+    if not inactive_user:
+        new_user = User(
+            email="inactive_user@user.com",
+            hashed_password=await password_hasher("user"),
+            role_id=roles_map["user"].id,
+            name="Inactive user",
+            is_active=False,
+        )
+        session.add(new_user)
+        await session.flush()
+        await session.refresh(new_user)
 
     await session.commit()
     logger.info("Инициализация данных успешно завершена!")

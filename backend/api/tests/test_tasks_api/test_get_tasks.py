@@ -1,6 +1,6 @@
 from backend.api.dependencies.permissions import get_current_user
 from backend.api.main import app
-from backend.core.constants import TaskStatus
+from backend.core.enums import TaskStatus
 from tests.fixtures.environment_setup import override_get_regular_user
 
 
@@ -38,8 +38,9 @@ async def test_get_tasks_by_filters(client):
     assert response_done.status_code == 200
 
     data = response_done.json()
-    assert len(data) == 1
-    assert data[0]["title"] == "Задача 2"
+    items = data.get("items", [])  # Извлекаем список
+    assert len(items) == 1
+    assert items[0]["title"] == "Задача 2"
 
 
 async def test_get_all_tasks_forbidden(client):

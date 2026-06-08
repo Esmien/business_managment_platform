@@ -2,8 +2,9 @@ from typing import Literal
 
 from loguru import logger
 
+from backend.api.dependencies.pagination import PaginationParams, Page
 from backend.core.base_service import BaseService
-from backend.core.constants import (
+from backend.core.enums import (
     TaskStatus,
     TASK_NOT_FOUND,
     BusinessElementName,
@@ -49,7 +50,8 @@ class TaskService(BaseService[TaskRead]):
         user: UserDTO,
         scope: Literal["my", "team", "all"],
         task_status: TaskStatus | None,
-    ) -> list[TaskRead]:
+        params: PaginationParams,  # <-- Добавили параметры пагинации
+    ) -> Page[TaskRead]:
         """
         Получает отфильтрованный по критериям список задач
 
@@ -59,7 +61,7 @@ class TaskService(BaseService[TaskRead]):
             task_status - статус задачи (для фильтров)
 
         Returns:
-            Список задач после фильтрации
+            Объект страницы (Page), содержащий список комментариев и метаданные пагинации
 
         Raises:
             AccessDeniedError - если нет доступа к общему скоупу (нет прав на просмотр "all")
@@ -91,14 +93,18 @@ class TaskService(BaseService[TaskRead]):
             )
 
             # Собираем отфильтрованные по скоупам таски
-            tasks = await self.repository.get_tasks_with_filters(
-                user_id=user_id_filter, team_id=team_id_filter, task_status=task_status
+            tasks, total = await self.repository.get_tasks_with_filters(
+                offset=params.offset,
+                limit=params.limit,
+                user_id=user_id_filter,
+                team_id=team_id_filter,
+                task_status=task_status,
             )
 
         if not tasks:
             logger.info("Задачи не найдены.")
 
-        return tasks
+        return Page.create(items=tasks, total=total, params=params)
 
     async def create_task(self, task_in: TaskCreate, author: UserDTO) -> TaskRead:
         """

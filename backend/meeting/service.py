@@ -1,8 +1,9 @@
 from loguru import logger
 
+from backend.api.dependencies.pagination import PaginationParams, Page
 from backend.core.base_service import BaseService
 
-from backend.core.constants import BusinessElementName, Action, AccessLevel
+from backend.core.enums import BusinessElementName, Action, AccessLevel
 from backend.exceptions import (
     MeetingOverlapError,
     MeetingDoesNotExistsError,
@@ -102,13 +103,20 @@ class MeetingService(BaseService[MeetingReadWithParticipants]):
         return new_meeting
 
     async def get_all_meetings(
-        self, user: UserDTO
-    ) -> list[MeetingReadWithParticipants]:
+        self, user: UserDTO, params: PaginationParams
+    ) -> Page[MeetingReadWithParticipants]:
         """
         Получает все доступные пользователю встречи
 
         Args:
             user - запрашивающий встречи пользователь
+            params - параметры пагинации
+
+        Returns:
+            Объект страницы (Page), содержащий список комментариев и метаданные пагинации
+
+        Raises:
+            UnknownAccessLevelError - если уровень доступа не описан в политиках, проблема сервера
         """
         async with self.uow:
             # Проверяем глобальные права на просмотр встреч
@@ -129,7 +137,12 @@ class MeetingService(BaseService[MeetingReadWithParticipants]):
             else:
                 raise UnknownAccessLevelError("Неизвестный уровень доступа")
 
-            return await self.uow.meetings.get_meetings(user_id=filter_user_id)
+            # Пагинируем
+            meetings, total = await self.uow.meetings.get_meetings(
+                offset=params.offset, limit=params.limit, user_id=filter_user_id
+            )
+
+            return Page.create(items=meetings, total=total, params=params)
 
     async def get_meeting_with_participants(
         self, meeting_id: int, user: UserDTO
@@ -143,6 +156,9 @@ class MeetingService(BaseService[MeetingReadWithParticipants]):
 
         Returns:
             Данные встречи со всеми участниками
+
+        Raises:
+            MeetingDoesNotExistsError - если встреча не нашлась по ID
         """
         async with self.uow:
             meeting = await self.get_or_raise(obj_id=meeting_id)
@@ -158,7 +174,7 @@ class MeetingService(BaseService[MeetingReadWithParticipants]):
             return meeting
 
     async def update_meeting(
-        self, meeting_id, update_data: MeetingUpdate, user: UserDTO
+        self, meeting_id: int, update_data: MeetingUpdate, user: UserDTO
     ) -> MeetingReadWithParticipants:
         """
         Обновляет данные встречи
@@ -170,6 +186,9 @@ class MeetingService(BaseService[MeetingReadWithParticipants]):
 
         Returns:
             Обновленная встреча
+
+        Raises:
+            MeetingDoesNotExistsError - если встреча не нашлась
         """
         # Сериализуем DTO для удобной работы
         update_dict = update_data.model_dump(exclude_unset=True)
@@ -198,7 +217,7 @@ class MeetingService(BaseService[MeetingReadWithParticipants]):
 
             # Если на стороне репо что-то пошло не так, сообщаем, что встреча  не найдена
             if not updated_meeting:
-                raise MeetingDoesNotExistsError("Встреча не найдена")
+                raise self.not_found_exception
 
             await self.uow.commit()
 

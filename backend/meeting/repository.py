@@ -20,13 +20,16 @@ class MeetingRepository(BaseRepository[Meeting, MeetingReadWithParticipants]):
             session=session, model=Meeting, dto=MeetingReadWithParticipants
         )
 
-    async def _get_instance(self, obj_id: int) -> Meeting | None:
+    async def _get_instance(
+        self, obj_id: int, for_update: bool = False
+    ) -> Meeting | None:
         """
         Переопределение метода базового класса.
         Все CRUD теперь подтягивают участников через selectinload
 
         Args:
             obj_id - ID искомого объекта
+            for_update - флаг для блокировки транзакции для обновления
 
         Returns:
             ORM-модель встречи со списком участников или None, если встреча не нашлась
@@ -36,6 +39,10 @@ class MeetingRepository(BaseRepository[Meeting, MeetingReadWithParticipants]):
             .where(self.model.id == obj_id)
             .options(selectinload(self.model.participants))
         )
+
+        if for_update:
+            stmt = stmt.with_for_update()
+
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -115,16 +122,21 @@ class MeetingRepository(BaseRepository[Meeting, MeetingReadWithParticipants]):
         return MeetingReadWithParticipants.model_validate(obj=new_meeting)
 
     async def get_meetings(
-        self, user_id: int | None = None
-    ) -> list[MeetingReadWithParticipants]:
+        self,
+        offset: int,
+        limit: int,
+        user_id: int | None = None,
+    ) -> tuple[list[MeetingReadWithParticipants], int]:
         """
         Получает доступные пользователю встречи
 
         Args:
+            offset - смещение указателя при чтении большого количества данных
+            limit - ограничение на количество выдаваемых за раз данных
             user_id - ID пользователя для фильтрации встреч. Если None - возвращаем ВСЕ встречи
 
         Returns:
-            Список встреч со списком участников
+            Пагинированный список встреч со списком участников и общее количество встреч
         """
         # Базовый запрос с подгрузкой участников
         stmt = select(Meeting).options(selectinload(Meeting.participants))
@@ -138,14 +150,7 @@ class MeetingRepository(BaseRepository[Meeting, MeetingReadWithParticipants]):
                 )
             )
 
-        # Сортируем по дате начала (свежие сверху)
-        stmt = stmt.order_by(Meeting.datetime_start.desc())
-
-        result = await self.session.execute(statement=stmt)
-        meetings = result.scalars().all()
-
-        # Собираем встречи в список и возвращаем
-        return [MeetingReadWithParticipants.model_validate(obj=m) for m in meetings]
+        return await self._paginate_statement(stmt=stmt, offset=offset, limit=limit)
 
     async def update_meeting(
         self, meeting_id: int, data_for_update: MeetingUpdateDTO
@@ -160,7 +165,7 @@ class MeetingRepository(BaseRepository[Meeting, MeetingReadWithParticipants]):
         Returns:
             Встреча с обновленными данными или None, если такой встречи не существует
         """
-        meeting = await self._get_instance(obj_id=meeting_id)
+        meeting = await self._get_instance(obj_id=meeting_id, for_update=True)
         if not meeting:
             return None
 
@@ -190,18 +195,25 @@ class MeetingRepository(BaseRepository[Meeting, MeetingReadWithParticipants]):
         return MeetingReadWithParticipants.model_validate(obj=meeting)
 
     async def get_meetings_by_date_range(
-        self, user_id: int, start_dt: datetime, end_dt: datetime
-    ) -> list[MeetingReadWithParticipants]:
+        self,
+        offset: int,
+        limit: int,
+        user_id: int,
+        start_dt: datetime,
+        end_dt: datetime,
+    ) -> tuple[list[MeetingReadWithParticipants], int]:
         """
         Получает встречи за указанный период
 
         Args:
+            offset - смещение указателя при чтении большого количества данных
+            limit - ограничение на количество выдаваемых за раз данных
             user_id - ID пользователя, который запрашивает встречи
             start_dt - начало периода
             end_dt - конец периода
 
         Returns:
-            Список отфильтрованных встреч
+            Пагинированный список отфильтрованных встреч и общее количество встреч
         """
         stmt = (
             select(Meeting)
@@ -223,9 +235,4 @@ class MeetingRepository(BaseRepository[Meeting, MeetingReadWithParticipants]):
             .order_by(Meeting.datetime_start.asc())
         )
 
-        result = await self.session.execute(statement=stmt)
-
-        return [
-            MeetingReadWithParticipants.model_validate(obj=m)
-            for m in result.scalars().all()
-        ]
+        return await self._paginate_statement(stmt=stmt, limit=limit, offset=offset)
