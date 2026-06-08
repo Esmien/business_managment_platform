@@ -1,6 +1,6 @@
 from typing import TypeVar, Generic, Any
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import select, func, Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 ModelType = TypeVar("ModelType")
@@ -83,6 +83,30 @@ class BaseRepository(Generic[ModelType, DTOType]):
 
         await self.session.delete(instance=instance)
         await self.session.flush()
+
+    async def _paginate_statement(
+        self, stmt: Select, offset: int, limit: int
+    ) -> tuple[list[DTOType], int]:
+        """
+        Универсальный обработчик пагинации для любых, даже самых сложных запросов.
+        Принимает готовый Select-запрос, считает total и отдает страницу с DTO.
+        """
+        # 1. Считаем общее количество записей, игнорируя сортировку (чтобы не тормозило)
+        count_stmt = stmt.with_only_columns(func.count(self.model.id)).order_by(None)
+        total = await self.session.scalar(count_stmt) or 0
+
+        # 2. Навешиваем пагинацию на исходный запрос
+        paginated_stmt = stmt.offset(offset).limit(limit)
+        result = await self.session.execute(paginated_stmt)
+
+        # scalars().unique().all() нужен на случай, если в запросе есть джойны
+        # один-ко-многим или selectinload, чтобы алхимия не дублировала строки
+        items = result.scalars().unique().all()
+
+        # 3. Мапим в DTO
+        dtos = [self.dto.model_validate(item) for item in items]
+
+        return dtos, total
 
     async def get_paginated(
         self, offset: int, limit: int, **filters
