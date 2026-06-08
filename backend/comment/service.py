@@ -1,5 +1,6 @@
 from loguru import logger
 
+from backend.api.dependencies.pagination import PaginationParams, Page
 from backend.comment.repository import CommentRepository
 from backend.comment.schemas import CommentCreate, CommentRead
 from backend.core.base_service import BaseService
@@ -79,16 +80,19 @@ class CommentService(BaseService[CommentRead]):
         )
         return new_comment
 
-    async def get_task_comments(self, task_id: int, user: UserDTO) -> list[CommentRead]:
+    async def get_task_comments(
+        self, task_id: int, user: UserDTO, params: PaginationParams
+    ) -> Page[CommentRead]:
         """
         Получает список всех комментариев к задаче
 
         Args:
             task_id - ID задачи с комментариями
             user - запрашивающий пользователь (для проверки прав)
+            params - параметры пагинации
 
         Returns:
-            Список комментариев
+            Объект страницы (Page), содержащий список комментариев и метаданные пагинации
         """
         async with self.uow:
             task = await self._get_task(task_id=task_id)
@@ -106,5 +110,9 @@ class CommentService(BaseService[CommentRead]):
                 error_msg="Вы не являетесь участником задачи, комментарии недоступны.",
             )
 
-            # Получаем комментарии
-            return await self.repository.get_comments_by_task_id(task_id)
+            # Получаем комментарии с лимитами
+            comments, total = await self.repository.get_comments_by_task_id(
+                task_id=task_id, offset=params.offset, limit=params.limit
+            )
+
+            return Page.create(items=comments, total=total, params=params)
