@@ -13,6 +13,13 @@ async def init_redis() -> None:
     )
 
 
+def get_redis() -> Redis:
+    """Провайдер для Dependency Injection в FastAPI"""
+    if redis_client is None:
+        raise RuntimeError("Клиент Redis не инициализирован")
+    return redis_client
+
+
 async def close_redis() -> None:
     global redis_client
     if redis_client:
