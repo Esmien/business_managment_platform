@@ -32,6 +32,7 @@ class DatabaseConfig(BaseModelConfig):
 class RedisConfig(BaseModelConfig):
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
+    CACHE_TTL: int = 3600
 
     @property
     def redis_url(self) -> str:
