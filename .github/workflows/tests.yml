@@ -17,10 +17,14 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - run: pip install ruff
-      - run: |
-          ruff check .
-          ruff format --check .
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Run Ruff Linter
+        run: ruff check --output-format=github .
+
+      - name: Run Ruff Formatter
+        run: ruff format --check .
 
   test:
     runs-on: ubuntu-24.04
@@ -52,7 +56,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install poetry
-          poetry install --no-root 
+          poetry install --no-root
 
       - name: Create test database
         run: |
