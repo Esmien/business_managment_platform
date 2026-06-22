@@ -22,6 +22,10 @@ class MeetingBase(BaseModel):
         default_factory=list, description="ID участников"
     )
 
+
+class MeetingCreate(MeetingBase):
+    """Схема для FastAPI роутера (только то, что вводит юзер)"""
+
     @model_validator(mode="after")
     def validate_datetime(self):
         """
@@ -57,12 +61,6 @@ class MeetingBase(BaseModel):
             )
 
         return self
-
-
-class MeetingCreate(MeetingBase):
-    """Схема для FastAPI роутера (только то, что вводит юзер)"""
-
-    pass
 
 
 class MeetingCreateDTO(MeetingBase):
