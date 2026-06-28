@@ -40,6 +40,14 @@ class UserLogin(BaseModel):
     password: str
 
 
+class UserTelegramLogin(BaseModel):
+    tg_id: int = Field(..., description="telegramID пользователя")
+
+
+class UserTelegramLink(UserLogin, UserTelegramLogin):
+    pass
+
+
 class UserRegister(UserBase):
     """Схема с полями для регистрации и валидацией пароля"""
 
@@ -67,6 +75,7 @@ class UserUpdate(BaseModel):
     name: str | None = Field(default=None, examples=["Алексей"])
     surname: str | None = Field(default=None, examples=["Алексеевич"])
     last_name: str | None = Field(default=None, examples=["Алексеев"])
+    tg_id: int | None = Field(default=None, examples=["123456789"])
 
     model_config = ConfigDict(extra="forbid")
 
