@@ -9,6 +9,7 @@ from backend.api.dependencies.reg_and_auth import (
 )
 from backend.core.utils.error_schemas import ErrorResponseSchema
 from backend.user.schemas import (
+    RefreshTokenRequest,
     Token,
     UserChangeStatus,
     UserLogin,
@@ -116,6 +117,24 @@ async def login(
     token = service.get_auth_token(user=user)
 
     return token
+
+
+@router.post(
+    path="/refresh/",
+    response_model=Token,
+    status_code=status.HTTP_200_OK,
+    summary="Обновление access-токена",
+    responses={
+        401: {"model": ErrorResponseSchema, "description": "Невалидный токен"},
+    },
+)
+async def refresh_access_token(
+    request_data: RefreshTokenRequest,
+    service: AuthServiceDepends,
+    redis: RedisDepends,
+):
+    """Обновляет пару токенов по валидному refresh-токену"""
+    return await service.refresh_tokens(refresh_token=request_data.refresh_token, redis=redis)
 
 
 @router.post(

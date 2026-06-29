@@ -8,6 +8,7 @@ from backend.core.config import settings
 from backend.core.enums import Action, BusinessElementName, RoleName
 from backend.core.security import (
     create_access_token,
+    create_refresh_token,
     get_password_hash,
     verify_password,
 )
@@ -217,8 +218,50 @@ class AuthService:
 
         # Генерируем токен
         access_token = create_access_token(data={"sub": str(user.id)})
+        refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
-        return Token(access_token=access_token, token_type="bearer")
+        return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+
+    async def refresh_tokens(self, refresh_token: str, redis: Redis) -> Token:
+        """
+        Метод для обработки refresh токена
+
+        Args:
+            refresh_token - refresh токен для обработки
+            redis - инстанс запущенного Redis
+
+        Returns:
+            Новая пара access и refresh токенов
+
+        Raises:
+            BadCredentialsError - если исходный токен не refresh, он в блэклисте или невалиден
+        """
+        try:
+            payload = jwt.decode(
+                jwt=refresh_token,
+                key=settings.security.SECRET_KEY,
+                algorithms=[settings.security.ALGORITHM],
+            )
+            # Проверяем тип токена
+            if payload.get("type") != "refresh":
+                raise BadCredentialsError("Неверный тип токена")
+
+            user_id = payload.get("sub")
+            jti = payload.get("jti")
+
+            # Проверка на блэклист
+            if await redis.get(f"jwt:blacklist:{jti}"):
+                raise BadCredentialsError("Токен отозван")
+
+            user = await self.get_active_user_by_id(int(user_id))
+
+            # Добавляем текущий refresh токен в блэклист
+            await self.logout(token=refresh_token, redis=redis)
+
+            return self.get_auth_token(user=user)
+
+        except jwt.PyJWTError:
+            raise BadCredentialsError("Недействительный токен") from None
 
     async def get_active_user_by_id(self, user_id: int) -> UserDTO:
         """
