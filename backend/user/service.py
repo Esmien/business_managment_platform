@@ -1,3 +1,5 @@
+import secrets
+import string
 from datetime import UTC, datetime
 
 import jwt
@@ -25,20 +27,21 @@ from backend.exceptions import (
 )
 from backend.rbac.schemas import AccessContextDTO
 from backend.rbac.service import RbacService
-from backend.user.schemas import Token, UserCreateDTO, UserDTO, UserRegister, UserUpdate
+from backend.user.schemas import RegisterCode, Token, UserCreateDTO, UserDTO, UserRegister, UserUpdate
 
 
 class RegisterService:
     def __init__(self, uow: IUnitOfWork):
         self.uow = uow
 
-    async def register_user(self, user_in: UserRegister, role_name: RoleName = RoleName.USER) -> UserDTO:
+    async def register_user(self, user_in: UserRegister, redis: Redis, role_name: RoleName = RoleName.USER) -> UserDTO:
         """
         Регистрирует пользователя, присваивая ему роль
 
         Args:
             user_in - Pydantic-модель пользователя с данными для регистрации
             role_name - присваиваемая роль (по умолчанию User)
+            redis - инстанс Redis с открытым подключением
 
         Returns:
             Модель зарегистрированного пользователя
@@ -47,6 +50,12 @@ class RegisterService:
             UserExistsError - если пользователь существует
             RoleDoesNotExistsError - присваиваемая роль не найдена
         """
+        redis_key = f"backend:reg_code:{user_in.register_code}"
+        is_valid_code = await redis.get(name=redis_key)
+
+        if not is_valid_code:
+            logger.warning(f"Попытка регистрации с недействительным кодом: {user_in.register_code}")
+            raise BadCredentialsError("Код регистрации недействителен или уже был использован")
         # Защита от присвоения несуществующей роли
         role_id = await self.uow.register.get_role_id(role_name=role_name)
         # Проблема на стороне сервера, роль не найдена
@@ -56,7 +65,7 @@ class RegisterService:
 
         # Собираем модель пользователя со всеми полями
         new_user_dto = UserCreateDTO(
-            **user_in.model_dump(exclude={"password", "repeat_password"}),
+            **user_in.model_dump(exclude={"password", "repeat_password", "register_code"}),
             hashed_password=await get_password_hash(user_in.password),
             role_id=role_id,
             is_active=True,
@@ -70,6 +79,9 @@ class RegisterService:
 
         # Регистрируем
         await self.uow.commit()
+        # Удаляем код, так как он одноразовый, а регистрация на этом моменте уже закоммичена в БД
+        await redis.delete(redis_key)
+
         logger.info(f"Пользователь ID: {registered_user.id}, Email: {registered_user.email} зарегистрирован")
         return registered_user
 
@@ -219,15 +231,15 @@ class AuthService:
 
         return activated_user
 
-    def get_auth_token(self, user: UserDTO) -> Token:
+    def get_auth_tokens(self, user: UserDTO) -> Token:
         """
-        Получает JWT-токен для пользователя
+        Получает JWT-токены для пользователя (access и refresh)
 
         Args:
             user - запрашивающий токен пользователь
 
         Returns:
-            Token(access_token=JWT-строка, token_type="bearer")
+            Token(access_token=AccessJWT, refresh_token=RefreshJWT, token_type="bearer")
 
         Raises:
             UserNotActiveError - если запрашивающий юзер неактивен
@@ -271,7 +283,7 @@ class AuthService:
             jti = payload.get("jti")
 
             # Проверка на блэклист
-            if await redis.get(f"jwt:blacklist:{jti}"):
+            if await redis.get(f"backend:jwt:blacklist:{jti}"):
                 raise BadCredentialsError("Токен отозван")
 
             user = await self.get_active_user_by_id(int(user_id))
@@ -279,7 +291,7 @@ class AuthService:
             # Добавляем текущий refresh токен в блэклист
             await self.logout(token=refresh_token, redis=redis)
 
-            return self.get_auth_token(user=user)
+            return self.get_auth_tokens(user=user)
 
         except jwt.PyJWTError:
             raise BadCredentialsError("Недействительный токен") from None
@@ -335,7 +347,7 @@ class AuthService:
 
             if ttl > 0:
                 # Отправляем в Redis
-                await redis.setex(f"jwt:blacklist:{jti}", ttl, "revoked")
+                await redis.setex(f"backend:jwt:blacklist:{jti}", ttl, "revoked")
                 logger.debug(f"Токен {jti} успешно добавлен в блэклист на {ttl} сек.")
 
         except jwt.DecodeError:
@@ -349,6 +361,21 @@ class UserService:
     def __init__(self, uow: IUnitOfWork, rbac_service: RbacService):
         self.uow = uow
         self.rbac = rbac_service
+
+    async def generate_registration_code(self, user: UserDTO, redis: Redis) -> RegisterCode:
+        await self.rbac.enforce_permission(
+            user=user,
+            business_element_name=BusinessElementName.USERS,
+            action=Action.CREATE,
+            error_msg="Недостаточно прав для создания кода для регистрации",
+        )
+
+        alphabet = string.ascii_uppercase + string.digits
+        new_code = "".join(secrets.choice(alphabet) for _ in range(6))
+
+        # Сохраняем в Redis с TTL на 24 часа (86400 секунд)
+        await redis.setex(f"backend:reg_code:{new_code}", 86400, "valid")
+        return RegisterCode(register_code=new_code)
 
     async def update_profile(self, user: UserDTO, update_data: UserUpdate) -> UserDTO:
         """

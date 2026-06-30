@@ -67,7 +67,7 @@ async def get_current_user(
 
         # Проверяем токен на наличие в блэклисте
         if jti:
-            is_revoked = await redis.get(f"jwt:blacklist:{jti}")
+            is_revoked = await redis.get(f"backend:jwt:blacklist:{jti}")
             if is_revoked:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

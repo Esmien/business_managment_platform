@@ -5,6 +5,32 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/v1/auth/generate-register-code/": {
+      "post": {
+        "tags": [
+          "Аутентификация"
+        ],
+        "summary": "Генерация кода регистрации (Только для админов)",
+        "operationId": "generate_registration_code_api_v1_auth_generate_register_code__post",
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterCode"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/auth/register/": {
       "post": {
         "tags": [
@@ -175,6 +201,234 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponseSchema"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh/": {
+      "post": {
+        "tags": [
+          "Аутентификация"
+        ],
+        "summary": "Обновление access-токена",
+        "description": "Обновляет пару токенов по валидному refresh-токену",
+        "operationId": "refresh_access_token_api_v1_auth_refresh__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Невалидный токен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/telegram/login/": {
+      "post": {
+        "tags": [
+          "Аутентификация"
+        ],
+        "summary": "Аутентификация через телеграм",
+        "description": "Аутентификация пользователя через телеграм-бота\nНеправильные креды - 401 Unauthorized\nПользователь есть, но неактивен - 403 Forbidden",
+        "operationId": "telegram_login_api_v1_auth_telegram_login__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserTelegramLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неверные данные учетной записи или пользователь не существует",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseSchema"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Пользователь не активен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/telegram/link/": {
+      "post": {
+        "tags": [
+          "Аутентификация"
+        ],
+        "summary": "Привязка Telegram ID к аккаунту",
+        "description": "Эндпоинт для единоразовой привязки аккаунта Telegram.\nТребует email и пароль для подтверждения личности.",
+        "operationId": "link_telegram_account_api_v1_auth_telegram_link__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserTelegramLink"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неверные данные учетной записи или пользователь не существует",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseSchema"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Пользователь не активен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/telegram/unlink/": {
+      "post": {
+        "tags": [
+          "Аутентификация"
+        ],
+        "summary": "Отвязка ТГ-аккаунта от учетной записи",
+        "operationId": "unlink_telegram_account_api_v1_auth_telegram_unlink__post",
+        "parameters": [
+          {
+            "name": "x-bot-secret-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Системный токен бота",
+              "title": "X-Bot-Secret-Token"
+            },
+            "description": "Системный токен бота"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserTelegramUnlink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -2272,6 +2526,35 @@
         ],
         "title": "Page[TaskRead]"
       },
+      "RefreshTokenRequest": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshTokenRequest"
+      },
+      "RegisterCode": {
+        "properties": {
+          "register_code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Register Code",
+            "description": "Одноразовый код для регистрации на платформе"
+          }
+        },
+        "type": "object",
+        "required": [
+          "register_code"
+        ],
+        "title": "RegisterCode"
+      },
       "RoleRead": {
         "properties": {
           "name": {
@@ -2624,15 +2907,20 @@
             "type": "string",
             "title": "Access Token"
           },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
           "token_type": {
             "type": "string",
-            "title": "Token Type"
+            "title": "Token Type",
+            "default": "bearer"
           }
         },
         "type": "object",
         "required": [
           "access_token",
-          "token_type"
+          "refresh_token"
         ],
         "title": "Token",
         "description": "Схема модели JWT-токена"
@@ -2816,6 +3104,13 @@
             "examples": [
               "secret_password"
             ]
+          },
+          "register_code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Register Code",
+            "description": "Одноразовый код для регистрации на платформе"
           }
         },
         "additionalProperties": false,
@@ -2824,7 +3119,8 @@
           "email",
           "name",
           "password",
-          "repeat_password"
+          "repeat_password",
+          "register_code"
         ],
         "title": "UserRegister",
         "description": "Схема с полями для регистрации и валидацией пароля"
@@ -2854,6 +3150,59 @@
         ],
         "title": "UserStatisticsRead",
         "description": "Схема для сбора статистики по оценкам для отдельных пользователей"
+      },
+      "UserTelegramLink": {
+        "properties": {
+          "tg_id": {
+            "type": "integer",
+            "title": "Tg Id",
+            "description": "TelegramID пользователя"
+          },
+          "username": {
+            "type": "string",
+            "format": "email",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tg_id",
+          "username",
+          "password"
+        ],
+        "title": "UserTelegramLink"
+      },
+      "UserTelegramLogin": {
+        "properties": {
+          "tg_id": {
+            "type": "integer",
+            "title": "Tg Id",
+            "description": "TelegramID пользователя"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tg_id"
+        ],
+        "title": "UserTelegramLogin"
+      },
+      "UserTelegramUnlink": {
+        "properties": {
+          "tg_id": {
+            "type": "integer",
+            "title": "Tg Id",
+            "description": "TelegramID пользователя"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tg_id"
+        ],
+        "title": "UserTelegramUnlink"
       },
       "UserUpdate": {
         "properties": {
@@ -2897,6 +3246,20 @@
             "title": "Last Name",
             "examples": [
               "Алексеев"
+            ]
+          },
+          "tg_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tg Id",
+            "examples": [
+              "123456789"
             ]
           }
         },

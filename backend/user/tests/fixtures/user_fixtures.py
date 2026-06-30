@@ -51,6 +51,7 @@ def user_in():
         name="Test",
         surname="Test_1",
         last_name="Test_2",
+        register_code="000000",
     )
 
 

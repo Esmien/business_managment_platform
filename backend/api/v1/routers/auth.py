@@ -1,16 +1,18 @@
 from fastapi import APIRouter, Depends, status
 from loguru import logger
 
-from backend.api.dependencies.permissions import CredentialsDepends, get_current_user
-from backend.api.dependencies.redis import RedisConfigDepends, RedisDepends
+from backend.api.dependencies.permissions import CredentialsDepends, CurrentUserDepends, get_current_user
+from backend.api.dependencies.redis import RedisDepends
 from backend.api.dependencies.reg_and_auth import (
     AuthServiceDepends,
     BotSecretHeader,
     RegisterServiceDepends,
 )
+from backend.api.dependencies.users import UserServiceDepends
 from backend.core.utils.error_schemas import ErrorResponseSchema
 from backend.user.schemas import (
     RefreshTokenRequest,
+    RegisterCode,
     Token,
     UserChangeStatus,
     UserLogin,
@@ -22,6 +24,23 @@ from backend.user.schemas import (
 )
 
 router = APIRouter(prefix="/auth", tags=["Аутентификация"])
+
+
+@router.post(
+    path="/generate-register-code/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=RegisterCode,
+    summary="Генерация кода регистрации (Только для админов)",
+)
+async def generate_registration_code(
+    current_user: CurrentUserDepends,
+    service: UserServiceDepends,
+    redis: RedisDepends,
+):
+    # Генерируем случайную строку из 6 символов (заглавные буквы и цифры)
+    new_code = await service.generate_registration_code(user=current_user, redis=redis)
+    logger.info(f"Сгенерирован новый регистрационный код: {new_code}")
+    return new_code
 
 
 @router.post(
@@ -43,6 +62,7 @@ router = APIRouter(prefix="/auth", tags=["Аутентификация"])
 async def register_user(
     user_in: UserRegister,
     service: RegisterServiceDepends,
+    redis: RedisDepends,
 ):
     """
     Регистрирует пользователя, назначая ему по умолчанию роль "user"
@@ -52,7 +72,7 @@ async def register_user(
 
     # Прогоняем пайплайн регистрации пользователя:
     # проверка на существование->проверка наличия роли user в БД->присвоение роли и регистрация
-    new_user = await service.register_user(user_in=user_in)
+    new_user = await service.register_user(user_in=user_in, redis=redis)
 
     return new_user
 
@@ -116,9 +136,9 @@ async def login(
     """
     # Проверяем креды, получаем JWT-токен
     user = await service.check_users_creds(credentials.username, credentials.password)
-    token = service.get_auth_token(user=user)
+    tokens = service.get_auth_tokens(user=user)
 
-    return token
+    return tokens
 
 
 @router.post(
@@ -163,7 +183,7 @@ async def telegram_login(
     """
     user = await service.authenticate_by_telegram(tg_id=credentials.tg_id)
 
-    return service.get_auth_token(user=user)
+    return service.get_auth_tokens(user=user)
 
 
 @router.post(
@@ -191,7 +211,7 @@ async def link_telegram_account(
         email=credentials.username, password=credentials.password, tg_id=credentials.tg_id
     )
 
-    return service.get_auth_token(user=user)
+    return service.get_auth_tokens(user=user)
 
 
 @router.post(path="/telegram/unlink/", status_code=status.HTTP_200_OK, summary="Отвязка ТГ-аккаунта от учетной записи")
@@ -199,7 +219,7 @@ async def unlink_telegram_account(
     payload: UserTelegramUnlink,
     service: AuthServiceDepends,
     system_secret_key: BotSecretHeader,
-    redis: RedisConfigDepends,
+    redis: RedisDepends,
 ):
     await service.unlink_telegram_account(tg_id=payload.tg_id, system_secret_key=system_secret_key, redis=redis)
     return {"message": f"TG аккаунт {payload.tg_id} отвязан от учетной записи"}
