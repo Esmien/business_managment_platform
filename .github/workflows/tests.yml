@@ -74,5 +74,6 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           REDIS_HOST: redis
           REDIS_PORT: 6389
+          KEY_OF_SYSTEM_TOKEN: ""
         run: |
           poetry run pytest --asyncio-mode=auto -v
