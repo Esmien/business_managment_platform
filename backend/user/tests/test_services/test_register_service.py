@@ -1,10 +1,11 @@
 import pytest
 
-from backend.exceptions import RoleDoesNotExistError, UserExistsError
+from backend.exceptions import BadCredentialsError, RoleDoesNotExistError, UserExistsError
 
 
 @pytest.mark.parametrize("exc", [None, UserExistsError, RoleDoesNotExistError])
-async def test_register_cases(user_in, user_out, mock_uow, register_service, exc):
+async def test_register_cases(mock_redis, user_in, user_out, mock_uow, register_service, exc):
+    mock_redis.get.return_value = "000000"
     # 1. Мокаем поиск роли
     if exc == RoleDoesNotExistError:
         mock_uow.register.get_role_id.return_value = None
@@ -20,9 +21,20 @@ async def test_register_cases(user_in, user_out, mock_uow, register_service, exc
     # 3. Проверяем поведение сервиса
     if exc:
         with pytest.raises(exc):
-            await register_service.register_user(user_in=user_in)
+            await register_service.register_user(user_in=user_in, redis=mock_redis)
     else:
-        result = await register_service.register_user(user_in=user_in)
+        result = await register_service.register_user(user_in=user_in, redis=mock_redis)
         assert result == user_out
         # Если всё прошло успешно, сервис должен был закоммитить транзакцию
         mock_uow.commit.assert_called_once()
+        mock_redis.delete.assert_called_once_with(f"backend:reg_code:{user_in.register_code}")
+
+
+async def test_register_invalid_code(mock_redis, user_in, register_service):
+    # Учим мок Redis имитировать отсутствие кода (код неверный или протух)
+    mock_redis.get.return_value = None
+
+    with pytest.raises(BadCredentialsError) as exc_info:
+        await register_service.register_user(user_in=user_in, redis=mock_redis)
+
+    assert str(exc_info.value) == "Код регистрации недействителен или уже был использован"

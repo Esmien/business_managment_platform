@@ -177,7 +177,7 @@ async def test_logout_success_adds_to_blacklist(mock_settings, mock_redis, auth_
     called_ttl = call_args[1]
     called_value = call_args[2]
 
-    assert called_key == f"jwt:blacklist:{test_jti}"
+    assert called_key == f"backend:jwt:blacklist:{test_jti}"
     assert called_value == "revoked"
     # TTL должен быть около 900 секунд (15 минут), даем погрешность в пару секунд на выполнение теста
     assert 895 < called_ttl <= 900

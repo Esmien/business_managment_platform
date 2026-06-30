@@ -26,7 +26,7 @@ async def test_get_rule_cache_miss_saves_to_redis(
     assert result == dummy_rule
 
     # Убеждаемся, что мы попытались прочитать кэш
-    mock_redis.get.assert_called_once_with("rbac:rule:1:tasks")
+    mock_redis.get.assert_called_once_with("backend:rbac:rule:1:tasks")
 
     # Убеждаемся, что мы сходили в БД
     mock_uow.rbac.get_access_rule.assert_called_once_with(role_id=1, business_element_name=BusinessElementName.TASKS)
@@ -34,7 +34,7 @@ async def test_get_rule_cache_miss_saves_to_redis(
     # Убеждаемся, что данные были записаны в кэш с правильным ключом
     mock_redis.setex.assert_called_once()
     args, kwargs = mock_redis.setex.call_args
-    assert kwargs["name"] == "rbac:rule:1:tasks"
+    assert kwargs["name"] == "backend:rbac:rule:1:tasks"
     assert kwargs["value"] == dummy_rule.model_dump_json()
 
 
@@ -59,7 +59,7 @@ async def test_get_rule_cache_hit_bypasses_db(
     assert result.id == dummy_rule.id
     assert result.policies == dummy_rule.policies
 
-    mock_redis.get.assert_called_once_with("rbac:rule:1:tasks")
+    mock_redis.get.assert_called_once_with("backend:rbac:rule:1:tasks")
 
     # САМОЕ ВАЖНОЕ: Убеждаемся, что в базу запроса НЕ БЫЛО
     mock_uow.rbac.get_access_rule.assert_not_called()

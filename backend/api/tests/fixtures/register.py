@@ -17,6 +17,7 @@ def valid_data_for_register(base_user_data):
     additional_fields = {
         "password": "secret_password",
         "repeat_password": "secret_password",
+        "register_code": "000000",
     }
     user_data.update(**additional_fields)
 

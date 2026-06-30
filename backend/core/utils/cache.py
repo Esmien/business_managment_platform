@@ -12,7 +12,7 @@ def rbac_cache(ttl: int = 3600) -> Callable:
         @wraps(func)
         async def wrapper(self: Any, role_id: int, business_element_name: str) -> AccessRuleDTO | None:
             # Формируем ключ напрямую из аргументов
-            cache_key = f"rbac:rule:{role_id}:{business_element_name}"
+            cache_key = f"backend:rbac:rule:{role_id}:{business_element_name}"
 
             # Проверяем кэш
             cached_data = await self.redis.get(cache_key)
