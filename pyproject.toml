@@ -1,5 +1,5 @@
 [project]
-name = "business-managment-platform"
+name = "erp_system_backend"
 version = "0.1.0"
 description = "Web-application for command management"
 authors = [
